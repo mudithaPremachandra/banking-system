@@ -1,0 +1,166 @@
+# =============================================================================
+# BANKING SYSTEM — Docker Compose Orchestration
+# =============================================================================
+# OWNER: Muditha (Project Lead / DevOps)
+#
+# USAGE:
+#   docker-compose up --build        # Build and start all services
+#   docker-compose up -d             # Start in detached mode
+#   docker-compose down              # Stop all services
+#   docker-compose down -v           # Stop and remove volumes (wipes DB data)
+#   docker-compose logs auth-service # View logs for a specific service
+#
+# ARCHITECTURE:
+#   Frontend (5173) → Gateway (3000) → Auth (3001) / Account (3002) / Notification (3003)
+#   All backend services connect to PostgreSQL (5432) with separate databases.
+#
+# TODO (Muditha):
+# 1. Add health checks for each service (check /health endpoint)
+# 2. Add restart policies (restart: unless-stopped)
+# 3. Consider adding a production override file (docker-compose.prod.yml)
+# 4. Add resource limits (mem_limit, cpus) for production
+# 5. Ensure the init-databases.sql script runs on first postgres startup
+# =============================================================================
+
+version: "3.8"
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — Single instance, three databases
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: banking-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-net
+
+  # ---------------------------------------------------------------------------
+  # Auth Service — Registration, login, JWT, OTP trigger
+  # OWNER: Sandun
+  # ---------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: banking-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - AUTH_DATABASE_URL=${AUTH_DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_EXPIRY=${JWT_ACCESS_EXPIRY:-15m}
+      - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3003}
+      - PORT=3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banking-net
+
+  # ---------------------------------------------------------------------------
+  # Account Service — Accounts, deposits, withdrawals, transactions
+  # OWNER: Disaan
+  # ---------------------------------------------------------------------------
+  account-service:
+    build:
+      context: ./services/account-service
+      dockerfile: Dockerfile
+    container_name: banking-account-service
+    ports:
+      - "3002:3002"
+    environment:
+      - ACCOUNT_DATABASE_URL=${ACCOUNT_DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - PORT=3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banking-net
+
+  # ---------------------------------------------------------------------------
+  # Notification Service — OTP generation, email delivery via Nodemailer
+  # OWNER: Geethika
+  # ---------------------------------------------------------------------------
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: banking-notification-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NOTIFICATION_DATABASE_URL=${NOTIFICATION_DATABASE_URL}
+      - SMTP_HOST=${SMTP_HOST:-smtp.ethereal.email}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM:-noreply@bankingsystem.dev}
+      - PORT=3003
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banking-net
+
+  # ---------------------------------------------------------------------------
+  # API Gateway — Single entry point, proxies to backend services
+  # OWNER: Sanjaya
+  # ---------------------------------------------------------------------------
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: banking-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - ACCOUNT_SERVICE_URL=${ACCOUNT_SERVICE_URL:-http://account-service:3002}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3003}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+    depends_on:
+      - auth-service
+      - account-service
+      - notification-service
+    networks:
+      - banking-net
+
+  # ---------------------------------------------------------------------------
+  # Frontend — React + Vite SPA
+  # OWNER: Muditha
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: banking-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway
+    networks:
+      - banking-net
+
+volumes:
+  pgdata:
+
+networks:
+  banking-net:
+    driver: bridge

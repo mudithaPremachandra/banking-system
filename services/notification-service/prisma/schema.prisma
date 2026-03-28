@@ -1,0 +1,48 @@
+// =============================================================================
+// Notification Service — Prisma Schema
+// =============================================================================
+// OWNER: Kasunara (Database Administrator), Geethika (Notification Service Developer)
+//
+// DATABASE: notification_db (PostgreSQL)
+// ENV VAR: NOTIFICATION_DATABASE_URL
+//
+// This schema defines the OTP model for storing one-time passwords.
+// The Notification Service is the ONLY service that reads/writes this table.
+//
+// OTP FLOW:
+// 1. Auth Service calls POST /otp/send with { userId, email }
+// 2. Notification Service generates 6-digit OTP, hashes it with bcrypt
+// 3. Stores the hash in this table with 5-minute expiry
+// 4. Sends the plain OTP via email using Nodemailer
+// 5. When user enters OTP, frontend calls POST /otp/verify
+// 6. Notification Service finds the OTP record, compares hash, checks expiry
+//
+// TODO (Kasunara):
+// 1. Review indexes — consider index on (userId, used) for faster lookups
+// 2. Add cleanup strategy for expired OTPs (cron job or on-demand deletion)
+// 3. Run initial migration: cd services/notification-service && npx prisma migrate dev --name init
+//
+// TODO (Geethika):
+// 1. After schema is finalized, run: npx prisma generate
+// 2. The otpHash field stores a bcrypt hash of the 6-digit OTP (NOT the plain OTP)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("NOTIFICATION_DATABASE_URL")
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  userId    String
+  email     String
+  otpHash   String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

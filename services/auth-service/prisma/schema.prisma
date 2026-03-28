@@ -1,0 +1,55 @@
+// =============================================================================
+// Auth Service — Prisma Schema
+// =============================================================================
+// OWNER: Kasunara (Database Administrator), Sandun (Auth Service Developer)
+//
+// DATABASE: auth_db (PostgreSQL)
+// ENV VAR: AUTH_DATABASE_URL
+//
+// This schema defines the User and Token models for authentication.
+// The Auth Service is the ONLY service that reads/writes these tables.
+//
+// TODO (Kasunara):
+// 1. Review indexes — email is already indexed via @unique
+// 2. Consider adding an index on Token.userId for faster lookups
+// 3. Review cascade behavior — if a User is deleted, should their Tokens be deleted?
+//    Currently yes (onDelete: Cascade is implied by Prisma default)
+// 4. Run initial migration: cd services/auth-service && npx prisma migrate dev --name init
+// 5. Create seed script with test data (see prisma/seed.ts)
+//
+// TODO (Sandun):
+// 1. After Kasunara finalizes the schema, run: npx prisma generate
+// 2. This generates the Prisma Client in node_modules/.prisma/client
+// 3. Import PrismaClient from @prisma/client in your code
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AUTH_DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  fullName     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tokens       Token[]
+}
+
+model Token {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  revoked      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}

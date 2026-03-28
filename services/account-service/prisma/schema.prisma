@@ -1,0 +1,66 @@
+// =============================================================================
+// Account Service — Prisma Schema
+// =============================================================================
+// OWNER: Kasunara (Database Administrator), Disaan (Account Service Developer)
+//
+// DATABASE: account_db (PostgreSQL)
+// ENV VAR: ACCOUNT_DATABASE_URL
+//
+// This schema defines the Account and Transaction models.
+// The Account Service is the ONLY service that reads/writes these tables.
+//
+// IMPORTANT DESIGN DECISIONS:
+// - userId is @unique: one account per user (simplification for this project)
+// - balance uses Decimal(15,2): supports up to 9,999,999,999,999.99
+// - currency defaults to "LKR" (Sri Lankan Rupee)
+// - TransactionType enum: DEPOSIT or WITHDRAWAL
+// - balanceAfter is stored on each transaction for audit trail
+//
+// TODO (Kasunara):
+// 1. Review the Decimal precision (15,2) — sufficient for LKR?
+// 2. Add composite index on (accountId, createdAt DESC) for transaction history
+// 3. Run initial migration: cd services/account-service && npx prisma migrate dev --name init
+// 4. Create seed script with test accounts and sample transactions
+//
+// TODO (Disaan):
+// 1. After schema is finalized, run: npx prisma generate
+// 2. Use Prisma interactive transactions ($transaction) for all balance updates
+//    to prevent race conditions
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ACCOUNT_DATABASE_URL")
+}
+
+model Account {
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  accountNumber String        @unique
+  balance       Decimal       @default(0) @db.Decimal(15, 2)
+  currency      String        @default("LKR")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  transactions  Transaction[]
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+model Transaction {
+  id           String          @id @default(uuid())
+  accountId    String
+  type         TransactionType
+  amount       Decimal         @db.Decimal(15, 2)
+  balanceAfter Decimal         @db.Decimal(15, 2)
+  description  String?
+  createdAt    DateTime        @default(now())
+  account      Account         @relation(fields: [accountId], references: [id])
+}
