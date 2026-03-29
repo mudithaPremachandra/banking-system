@@ -11,8 +11,10 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
-RUN npm ci
+RUN npm config set fetch-timeout 600000 && npm install
 
 COPY prisma ./prisma
 RUN npx prisma generate
