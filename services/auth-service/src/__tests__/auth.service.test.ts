@@ -9,12 +9,6 @@
  *
  * TEST CASES TO IMPLEMENT:
  *
- * register()
- *   ✓ creates user and returns tokens when email is new
- *   ✓ throws 409 CONFLICT when email already exists
- *   ✓ hashes password with bcrypt (never stores plain text)
- *   ✓ calls notificationClient.sendOTP after creating user
- *
  * login()
  *   ✓ returns user and tokens when credentials are valid
  *   ✓ throws 404 USER_NOT_FOUND when email doesn't exist
@@ -43,10 +37,6 @@
  */
 describe("auth.service", () => {
   // TODO (Kawindi): implement tests
-  it.todo("register — creates user when email is new");
-  it.todo("register — throws 409 when email already exists");
-  it.todo("register — hashes password, never stores plain text");
-  it.todo("register — calls notificationClient.sendOTP");
   it.todo("login — returns tokens when credentials are valid");
   it.todo("login — throws 404 when email not found");
   it.todo("login — throws 401 when password is wrong");

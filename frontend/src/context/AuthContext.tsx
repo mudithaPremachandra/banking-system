@@ -19,8 +19,6 @@
  *    - login(email, password): Call api.loginUser(), store tokens + user in state
  *      and localStorage. After login, the user must verify OTP before accessing
  *      protected routes. Navigate to /otp after successful login.
- *    - register(email, password, fullName, phone?): Call api.registerUser(),
- *      navigate to /otp for OTP verification.
  *    - verifyOTP(userId, otpCode): Call api.verifyOTP(). On success, mark user
  *      as fully authenticated (store tokens, navigate to /dashboard).
  *    - logout(): Call api.logoutUser() with refreshToken, clear all state and
@@ -35,7 +33,7 @@
  *    - Store tokens in localStorage: "accessToken", "refreshToken", "user"
  *
  * 4. AUTH FLOW:
- *    User registers/logs in → receives tokens → redirected to /otp →
+ *    User logs in → receives tokens → redirected to /otp →
  *    enters OTP code → OTP verified → fully authenticated → /dashboard
  *
  * TODO (Muditha):
@@ -54,12 +52,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (
-    email: string,
-    password: string,
-    fullName: string,
-    phone?: string
-  ) => Promise<void>;
   verifyOTP: (userId: string, otpCode: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -91,18 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error("TODO: implement login");
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    fullName: string,
-    phone?: string
-  ): Promise<void> => {
-    // TODO (Muditha): Call api.registerUser({ email, password, fullName, phone })
-    // Store user + tokens in state and localStorage
-    // Navigate to /otp for OTP verification
-    throw new Error("TODO: implement register");
-  };
-
   const verifyOTP = async (
     userId: string,
     otpCode: string
@@ -130,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isLoading,
         login,
-        register,
         verifyOTP,
         logout,
       }}
