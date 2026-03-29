@@ -31,7 +31,6 @@
 // TODO (Muditha): Uncomment these imports as you implement each route
 // import { Routes, Route, Navigate } from "react-router-dom";
 // import Login from "./pages/Login";
-// import Register from "./pages/Register";
 // import OTPEntry from "./pages/OTPEntry";
 // import Dashboard from "./pages/Dashboard";
 // import Deposit from "./pages/Deposit";
@@ -46,7 +45,6 @@ function App() {
   // <Routes>
   //   {/* Public routes */}
   //   <Route path="/login" element={<Login />} />
-  //   <Route path="/register" element={<Register />} />
   //   <Route path="/otp" element={<OTPEntry />} />
   //
   //   {/* Protected routes wrapped in Layout */}
