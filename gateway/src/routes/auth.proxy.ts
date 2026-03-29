@@ -8,12 +8,7 @@
  *
  * ROUTES TO IMPLEMENT:
  *
- * 1. POST /register (public)
- *    - Validate body with registerSchema (email, password, fullName, phone?)
- *    - Forward to AUTH_SERVICE_URL/auth/register
- *    - Return 201 response from Auth Service
- *
- * 2. POST /login (public)
+ * 1. POST /login (public)
  *    - Validate body with loginSchema (email, password)
  *    - Forward to AUTH_SERVICE_URL/auth/login
  *    - Auth Service will internally call Notification Service to send OTP
@@ -49,29 +44,10 @@ import { Router, Request, Response, NextFunction } from "express";
 import axios from "axios";
 import { config } from "../config";
 import { validate } from "../middleware/zodValidation";
-import { registerSchema, loginSchema, refreshSchema, logoutSchema } from "../schemas";
+import { loginSchema, refreshSchema, logoutSchema } from "../schemas";
 
 const router = Router();
 const AUTH_URL = config.authServiceUrl;
-
-// POST /api/auth/register
-router.post(
-  "/register",
-  validate(registerSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // TODO (Sanjaya): Proxy to Auth Service
-      // const response = await axios.post(`${AUTH_URL}/auth/register`, req.body);
-      // res.status(response.status).json(response.data);
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Auth Service" },
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
 
 // POST /api/auth/login
 router.post(
