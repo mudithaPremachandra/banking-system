@@ -24,11 +24,9 @@ Every error response uses this format:
 | Code | Meaning | When |
 |------|---------|------|
 | 200 | OK | Successful GET, login, deposit/withdrawal |
-| 201 | Created | Successful registration |
 | 400 | Bad Request | Zod validation failure, insufficient funds, invalid OTP |
 | 401 | Unauthorized | Missing/invalid JWT, wrong password |
 | 404 | Not Found | User or account not found |
-| 409 | Conflict | Duplicate email on registration |
 | 410 | Gone | OTP has expired |
 | 500 | Server Error | Unexpected error |
 
@@ -37,40 +35,6 @@ Every error response uses this format:
 ## Auth Service — `/api/auth/*`
 
 Proxied by Gateway → `http://auth-service:3001`
-
-### POST /api/auth/register
-
-Register a new user. Triggers an OTP email after account creation.
-
-**Request body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "minlength8",
-  "fullName": "John Silva",
-  "phone": "+94771234567"
-}
-```
-> `phone` is optional.
-
-**Success — 201:**
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "fullName": "John Silva"
-  },
-  "accessToken": "eyJ...",
-  "refreshToken": "eyJ..."
-}
-```
-
-**Errors:**
-- `409` — `EMAIL_EXISTS` — Email already registered
-- `400` — `VALIDATION_ERROR` — Missing or invalid fields
-
----
 
 ### POST /api/auth/login
 
@@ -406,7 +370,7 @@ These calls happen inside the Docker network and are NOT exposed to the frontend
 
 | Caller | Target | Endpoint | When | Payload |
 |--------|--------|----------|------|---------|
-| Auth Service | Notification Service | `POST /otp/send` | After successful login or registration | `{ userId, email }` |
+| Auth Service | Notification Service | `POST /otp/send` | After successful login | `{ userId, email }` |
 | API Gateway | Auth Service | `GET /auth/verify-token` | Before proxying any protected route | `Authorization: Bearer <token>` |
 | Account Service | Auth Service _(optional)_ | `GET /auth/verify-token` | To validate JWT if not using shared secret | `Authorization: Bearer <token>` |
 
@@ -414,8 +378,10 @@ These calls happen inside the Docker network and are NOT exposed to the frontend
 
 ## Full Authentication Flow
 
+> **Note:** There is no self-service registration. User accounts are pre-created by the bank administrator via the seed script (`services/auth-service/prisma/seed.ts`).
+
 ```
-1. POST /api/auth/register  →  user created, OTP emailed
+1. POST /api/auth/login     →  credentials verified, OTP emailed
 2. POST /api/otp/verify     →  OTP confirmed, user is authenticated
 3. GET  /api/accounts/me    →  account auto-created, balance = 0
 4. POST /api/accounts/me/deposit  →  money added

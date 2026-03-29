@@ -9,17 +9,7 @@
  *
  * FUNCTIONS TO IMPLEMENT:
  *
- * 1. register({ email, password, fullName, phone? })
- *    STEPS:
- *    a. Check if email already exists → if yes, throw 409 CONFLICT
- *    b. Hash password using bcrypt (10-12 salt rounds)
- *    c. Create User record via authRepository.createUser()
- *    d. Generate access token + refresh token via tokenService
- *    e. Store refresh token in Token table via authRepository.createToken()
- *    f. Call notificationClient.sendOTP() to send OTP email
- *    g. Return { user: { id, email, fullName }, accessToken, refreshToken }
- *
- * 2. login({ email, password })
+ * 1. login({ email, password })
  *    STEPS:
  *    a. Find user by email → if not found, throw 404 NOT_FOUND
  *    b. Compare password with stored hash using bcrypt → if mismatch, throw 401
@@ -62,23 +52,6 @@ import * as tokenService from "./token.service";
 import * as notificationClient from "./notification.client";
 
 const SALT_ROUNDS = 10;
-
-export async function register(data: {
-  email: string;
-  password: string;
-  fullName: string;
-  phone?: string;
-}) {
-  // TODO (Sandun): Implement registration logic
-  // Step 1: Check if email exists
-  // Step 2: Hash password
-  // Step 3: Create user
-  // Step 4: Generate tokens
-  // Step 5: Store refresh token
-  // Step 6: Send OTP
-  // Step 7: Return response
-  throw new Error("TODO: Sandun — implement register");
-}
 
 export async function login(data: { email: string; password: string }) {
   // TODO (Sandun): Implement login logic

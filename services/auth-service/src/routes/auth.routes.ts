@@ -6,15 +6,9 @@
  * Define all auth-related Express routes here. Each route calls
  * the corresponding function in auth.service.ts.
  *
- * ROUTES (from architecture doc, page 9):
+ * ROUTES:
  *
- * 1. POST /register
- *    Body: { email, password, fullName, phone? }
- *    → Call authService.register()
- *    → Return 201: { user, accessToken, refreshToken }
- *    → Errors: 409 (duplicate email), 400 (validation)
- *
- * 2. POST /login
+ * 1. POST /login
  *    Body: { email, password }
  *    → Call authService.login()
  *    → This triggers OTP email via Notification Service
@@ -53,21 +47,6 @@ import { Router, Request, Response, NextFunction } from "express";
 // import { requireAuth } from "../middleware/requireAuth";
 
 const router = Router();
-
-// POST /auth/register
-router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // TODO (Sandun): Call authService.register(req.body)
-    // const result = await authService.register(req.body);
-    // res.status(201).json(result);
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement register" },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // POST /auth/login
 router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
