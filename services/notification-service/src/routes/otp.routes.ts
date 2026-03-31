@@ -31,7 +31,7 @@
  * TODO (Sandun): Coordinate on the exact request/response shapes
  */
 import { Router, Request, Response, NextFunction } from "express";
-// import * as notificationsService from "../services/notifications.service";
+import * as notificationsService from "../services/notifications.service";
 
 const router = Router();
 
@@ -49,14 +49,8 @@ router.post("/send", async (req: Request, res: Response, next: NextFunction) => 
       return;
     }
 
-    // TODO (Geethika): Call notificationsService.sendOTP(userId, email)
-    // const result = await notificationsService.sendOTP(userId, email);
-    // res.json({ message: "OTP sent successfully", otpId: result.otpId });
-
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Geethika — implement OTP sending" },
-    });
+    const result = await notificationsService.sendOTP(userId, email);
+    res.json({ message: "OTP sent successfully", otpId: result.otpId });
   } catch (err) {
     next(err);
   }
@@ -76,22 +70,25 @@ router.post("/verify", async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
-    // TODO (Geethika): Call notificationsService.verifyOTP(userId, otpCode)
-    // const result = await notificationsService.verifyOTP(userId, otpCode);
-    // if (result.expired) {
-    //   res.status(410).json({ success: false, error: { code: "OTP_EXPIRED", message: "OTP has expired" } });
-    //   return;
-    // }
-    // if (!result.valid) {
-    //   res.status(400).json({ success: false, error: { code: "INVALID_OTP", message: "Invalid OTP code" } });
-    //   return;
-    // }
-    // res.json({ verified: true });
+    const result = await notificationsService.verifyOTP(userId, otpCode);
 
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Geethika — implement OTP verification" },
-    });
+    if (result.expired) {
+      res.status(410).json({
+        success: false,
+        error: { code: "OTP_EXPIRED", message: "OTP has expired" },
+      });
+      return;
+    }
+
+    if (!result.valid) {
+      res.status(400).json({
+        success: false,
+        error: { code: "INVALID_OTP", message: "Invalid OTP code" },
+      });
+      return;
+    }
+
+    res.json({ verified: true });
   } catch (err) {
     next(err);
   }
