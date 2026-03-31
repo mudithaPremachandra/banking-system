@@ -39,15 +39,15 @@ router.post(
   "/send",
   validate(otpSendSchema),
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // TODO (Sanjaya): Proxy to Notification Service
-      // const response = await axios.post(`${NOTIFICATION_URL}/otp/send`, req.body);
-      // res.json(response.data);
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Notification Service" },
+     try {
+      const response = await axios.post(`${NOTIFICATION_URL}/otp/send`, req.body, {
+        headers: { "Content-Type": "application/json" },
       });
-    } catch (err) {
+      res.status(response.status).json(response.data);
+    } catch (err: any) {
+      if (err.response) {
+        return res.status(err.response.status).json(err.response.data);
+      }
       next(err);
     }
   }
@@ -59,14 +59,14 @@ router.post(
   validate(otpVerifySchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // TODO (Sanjaya): Proxy to Notification Service
-      // const response = await axios.post(`${NOTIFICATION_URL}/otp/verify`, req.body);
-      // res.json(response.data);
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Notification Service" },
+      const response = await axios.post(`${NOTIFICATION_URL}/otp/verify`, req.body, {
+        headers: { "Content-Type": "application/json" },
       });
-    } catch (err) {
+      res.status(response.status).json(response.data);
+    } catch (err: any) {
+      if (err.response) {
+        return res.status(err.response.status).json(err.response.data);
+      }
       next(err);
     }
   }
