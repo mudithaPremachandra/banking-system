@@ -29,6 +29,7 @@
  */
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import axios, { AxiosError } from "axios";
 
 export function errorHandler(
   err: Error,
@@ -52,10 +53,16 @@ export function errorHandler(
   }
 
   // TODO (Sanjaya): Handle AxiosError (forwarded from backend service)
-  // if (axios.isAxiosError(err) && err.response) {
-  //   res.status(err.response.status).json(err.response.data);
-  //   return;
-  // }
+  if (axios.isAxiosError(err) && err.response) {
+    res.status(err.response.status).json({
+      success: false,
+      error: {
+        code: err.response.data?.error?.code || "SERVICE_ERROR",
+        message: err.response.data?.error?.message || "Service request failed",
+      },
+    });
+    return;
+  }
 
   // Default: 500 Internal Server Error
   res.status(500).json({
