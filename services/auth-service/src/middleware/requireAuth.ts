@@ -35,10 +35,16 @@
  * - Extend Express Request type to include userId and userEmail
  */
 import { Request, Response, NextFunction } from "express";
-// import * as tokenService from "../services/token.service";
+import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
+import { verifyAccessToken } from "../services/token.service";
+
+export interface AuthRequest extends Request {
+  userId?: string;
+  userEmail?: string;
+}
 
 export function requireAuth(
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void {
@@ -54,23 +60,32 @@ export function requireAuth(
     }
 
     const token = authHeader.split(" ")[1];
+    const decoded = verifyAccessToken(token);
 
-    // TODO (Sandun): Verify the token and attach user info to request
-    // const decoded = tokenService.verifyAccessToken(token);
-    // (req as any).userId = decoded.userId;
-    // (req as any).userEmail = decoded.email;
-    // next();
+    req.userId = decoded.userId;
+    req.userEmail = decoded.email;
 
-    // TEMPORARY: Pass through (remove this after implementing token verification)
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement requireAuth" },
-    });
-  } catch (err) {
-    // TODO (Sandun): Handle TokenExpiredError vs other errors
+    next();
+  } catch (err: any) {
+    if (err instanceof TokenExpiredError) {
+      res.status(401).json({
+        success: false,
+        error: { code: "TOKEN_EXPIRED", message: "Token has expired" },
+      });
+      return;
+    }
+
+    if (err instanceof JsonWebTokenError) {
+      res.status(401).json({
+        success: false,
+        error: { code: "INVALID_TOKEN", message: "Invalid token" },
+      });
+      return;
+    }
+
     res.status(401).json({
       success: false,
-      error: { code: "INVALID_TOKEN", message: "Invalid or expired token" },
+      error: { code: "INVALID_TOKEN", message: "Authentication failed" },
     });
   }
 }
