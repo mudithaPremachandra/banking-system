@@ -38,41 +38,84 @@
  * - Handle TokenExpiredError separately from other JWT errors
  * - Consider using different secrets for access vs refresh tokens
  */
-import jwt from "jsonwebtoken";
+import { sign, verify, TokenExpiredError, JsonWebTokenError, type Secret } from "jsonwebtoken";
+import type { StringValue } from "ms";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-here";
-const ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || "15m";
-const REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || "7d";
-
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
   userId: string;
   email: string;
 }
 
-interface RefreshTokenPayload {
+export interface RefreshTokenPayload {
   userId: string;
 }
 
+const ACCESS_TOKEN_SECRET: Secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET || "your-secret-key-here";
+const REFRESH_TOKEN_SECRET: Secret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET || "your-secret-key-here";
+const ACCESS_EXPIRY = (process.env.JWT_ACCESS_EXPIRY || "15m") as StringValue;
+const REFRESH_EXPIRY = (process.env.JWT_REFRESH_EXPIRY || "7d") as StringValue;
+
+function parseExpiryToMs(expiry: string): number {
+  const match = expiry.match(/^(\d+)([smhd])$/);
+  if (!match) {
+    throw new Error(`Invalid expiry format: ${expiry}`);
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2];
+
+  switch (unit) {
+    case "s":
+      return value * 1000;
+    case "m":
+      return value * 60 * 1000;
+    case "h":
+      return value * 60 * 60 * 1000;
+    case "d":
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      throw new Error(`Unsupported expiry unit: ${unit}`);
+  }
+}
+
+export function getRefreshTokenExpiry(): Date {
+  return new Date(Date.now() + parseExpiryToMs(REFRESH_EXPIRY));
+}
+
 export function generateAccessToken(payload: AccessTokenPayload): string {
-  // TODO (Sandun): Implement
-  // return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_EXPIRY });
-  throw new Error("TODO: Sandun — implement generateAccessToken");
+  return sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_EXPIRY });
 }
 
 export function generateRefreshToken(payload: RefreshTokenPayload): string {
-  // TODO (Sandun): Implement
-  // return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_EXPIRY });
-  throw new Error("TODO: Sandun — implement generateRefreshToken");
+  return sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_EXPIRY });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
-  // TODO (Sandun): Implement
-  // return jwt.verify(token, JWT_SECRET) as AccessTokenPayload;
-  throw new Error("TODO: Sandun — implement verifyAccessToken");
+  try {
+    return verify(token, ACCESS_TOKEN_SECRET) as AccessTokenPayload;
+  } catch (error) {
+    if (error instanceof TokenExpiredError) {
+      console.error("[Token Service] Access token expired");
+      throw error;
+    } else if (error instanceof JsonWebTokenError) {
+      console.error("[Token Service] Invalid access token");
+      throw error;
+    }
+    throw error;
+  }
 }
 
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
-  // TODO (Sandun): Implement
-  // return jwt.verify(token, JWT_SECRET) as RefreshTokenPayload;
-  throw new Error("TODO: Sandun — implement verifyRefreshToken");
+  try {
+    return verify(token, REFRESH_TOKEN_SECRET) as RefreshTokenPayload;
+  } catch (error) {
+    if (error instanceof TokenExpiredError) {
+      console.error("[Token Service] Refresh token expired");
+      throw error;
+    } else if (error instanceof JsonWebTokenError) {
+      console.error("[Token Service] Invalid refresh token");
+      throw error;
+    }
+    throw error;
+  }
 }
