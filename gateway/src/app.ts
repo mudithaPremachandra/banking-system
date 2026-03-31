@@ -54,7 +54,12 @@ dotenv.config();
 const app = express();
 
 // --- Middleware ---
-app.use(cors()); // TODO (Sanjaya): Configure origin to frontend URL
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+); // TODO (Sanjaya): Configure origin to frontend URL
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
