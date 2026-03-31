@@ -1,34 +1,22 @@
-/**
- * Protected Route Wrapper
- * OWNER: Muditha (Frontend Developer)
- *
- * INSTRUCTIONS FOR AI AGENT:
- * This component wraps protected routes. It checks if the user is authenticated
- * via AuthContext. If not authenticated, it redirects to /login.
- *
- * IMPLEMENTATION:
- * - Use useAuth() to get isAuthenticated and isLoading
- * - If isLoading, show a loading spinner (coordinate with Kasun for design)
- * - If !isAuthenticated, return <Navigate to="/login" replace />
- * - If authenticated, render <Outlet /> (child routes)
- *
- * TODO (Muditha): Implement the logic
- * TODO (Kasun): Style the loading spinner
- */
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
-export default function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    const { isAuthenticated, loading } = useAuth();
+    const location = useLocation();
 
-  if (isLoading) {
-    // TODO (Kasun): Replace with a styled loading spinner
-    return <div>Loading...</div>;
-  }
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background text-banking-green">
+                <div className="animate-pulse text-lg font-medium">Loading session...</div>
+            </div>
+        );
+    }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
 
-  return <Outlet />;
-}
+    return <>{children}</>;
+};
