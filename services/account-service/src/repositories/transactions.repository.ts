@@ -23,23 +23,31 @@
  * TODO (Disaan): Implement all functions
  */
 import { prisma } from "../lib/prisma";
+import { Decimal } from "@prisma/client/runtime/library";
+import { TransactionType } from "@prisma/client";
 
 export async function findByAccountId(
   accountId: string,
   options: { skip: number; take: number }
 ) {
-  // TODO (Disaan): Implement
-  // return prisma.transaction.findMany({
-  //   where: { accountId },
-  //   orderBy: { createdAt: "desc" },
-  //   skip: options.skip,
-  //   take: options.take,
-  // });
-  throw new Error("TODO: Disaan — implement findByAccountId");
+  return prisma.transaction.findMany({
+    where: { accountId },
+    orderBy: { createdAt: "desc" },
+    skip: options.skip,
+    take: options.take,
+  });
 }
 
 export async function countByAccountId(accountId: string) {
-  // TODO (Disaan): Implement
-  // return prisma.transaction.count({ where: { accountId } });
-  throw new Error("TODO: Disaan — implement countByAccountId");
+  return prisma.transaction.count({ where: { accountId } });
+}
+
+export async function create(data: {
+  accountId: string;
+  type: TransactionType;
+  amount: Decimal;
+  balanceAfter: Decimal;
+  description?: string;
+}) {
+  return prisma.transaction.create({ data });
 }

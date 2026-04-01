@@ -19,18 +19,16 @@
  * TODO (Disaan): Implement all functions
  * TODO (Kasunara): Review for performance
  */
+
+import { Decimal } from "@prisma/client/runtime/library";
 import { prisma } from "../lib/prisma";
 
 export async function findByUserId(userId: string) {
-  // TODO (Disaan): Implement
-  // return prisma.account.findUnique({ where: { userId } });
-  throw new Error("TODO: Disaan — implement findByUserId");
+  return prisma.account.findUnique({ where: { userId } });
 }
 
 export async function findById(id: string) {
-  // TODO (Disaan): Implement
-  // return prisma.account.findUnique({ where: { id } });
-  throw new Error("TODO: Disaan — implement findById");
+  return prisma.account.findUnique({ where: { id } });
 }
 
 export async function create(data: {
@@ -39,7 +37,17 @@ export async function create(data: {
   balance?: number;
   currency?: string;
 }) {
-  // TODO (Disaan): Implement
-  // return prisma.account.create({ data });
-  throw new Error("TODO: Disaan — implement create");
+  return prisma.account.create({
+    data: {
+      ...data,
+      balance: data.balance === undefined ? undefined : new Decimal(data.balance),
+    },
+  });
+}
+
+export async function updateBalance(id: string, newBalance: Decimal) {
+  return prisma.account.update({
+    where: { id },
+    data: { balance: newBalance },
+  });
 }
