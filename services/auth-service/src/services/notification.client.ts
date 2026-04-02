@@ -23,24 +23,57 @@
  * - Add error handling: log failures but don't throw (graceful degradation)
  * - Coordinate with Geethika on the exact API contract
  */
+/**
+ * Notification Service Client — Inter-Service REST Communication
+ * OWNER: Sandun (Auth Service Developer)
+ *
+ * DESCRIPTION:
+ * This module handles sending OTP requests to the Notification Service.
+ * Called by Auth Service after successful login or registration.
+ *
+ * INTER-SERVICE CALL:
+ *   POST {NOTIFICATION_SERVICE_URL}/otp/send
+ *   Request body: { userId: string, email: string }
+ *   Response: 200 { message: string, otpId: string }
+ *
+ * IMPORTANT:
+ * - URL is configured via NOTIFICATION_SERVICE_URL env variable
+ * - Docker: http://notification-service:3003
+ * - Local dev: http://localhost:3003
+ * - Failures are logged but do not block login
+ */
+
 import axios from "axios";
 
 const NOTIFICATION_SERVICE_URL =
   process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3003";
 
-export async function sendOTP(data: {
-  userId: string;
-  email: string;
-}): Promise<void> {
+/**
+ * Send OTP to a user's email via Notification Service
+ * @param data Object containing userId and email
+ */
+export async function sendOTP(data: { userId: string; email: string }): Promise<void> {
   try {
-    // TODO (Sandun): Make the HTTP call to Notification Service
-    // await axios.post(`${NOTIFICATION_SERVICE_URL}/otp/send`, data);
+    // Make HTTP POST request to Notification Service
+    const response = await axios.post(`${NOTIFICATION_SERVICE_URL}/otp/send`, data, {
+      timeout: 5000, // Prevent hanging requests
+    });
+
     console.log(
-      `[Auth Service] TODO: Send OTP request to Notification Service for ${data.email}`
+      `[Auth Service] OTP sent successfully to ${data.email}, otpId: ${response.data.otpId}`
     );
-  } catch (error) {
-    // Log but don't throw — OTP failure shouldn't block login
-    console.error("[Auth Service] Failed to send OTP:", error);
-    // TODO (Sandun): Consider adding retry logic or a dead-letter queue
+  } catch (error: any) {
+    // Log errors but don't throw — OTP failure shouldn't block login
+    if (axios.isAxiosError(error)) {
+      console.error(
+        `[Auth Service] Failed to send OTP to ${data.email}. Status: ${error.response?.status}, Data: ${JSON.stringify(
+          error.response?.data
+        )}`
+      );
+    } else {
+      console.error("[Auth Service] Unexpected error sending OTP:", error);
+    }
+
+    // Optional: implement retry logic, queue, or alerting here
   }
 }
