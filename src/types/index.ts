@@ -31,6 +31,9 @@ export interface Transaction {
     type: 'DEPOSIT' | 'WITHDRAW';
     amount: number;
     date: string;
+    createdAt: string;       // Add this
+    balanceAfter: number;    // Add this
+    description: string;     // Add this
     method?: PaymentMethod;
     fee?: number;
     paymentLabel?: string;

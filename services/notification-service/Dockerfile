@@ -7,7 +7,7 @@
 # 2. Add non-root user
 # 3. Add HEALTHCHECK
 # =============================================================================
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
