@@ -2,10 +2,10 @@ import type { Transaction, TransactionsResponse, PaymentMethod, WithdrawalStatus
 import { updateBalance, mockBalance } from './accountService';
 
 const mockTransactions: Transaction[] = [
-    { id: 'tx_8f7d9a1b', type: 'DEPOSIT', amount: 5000, fee: 0, method: 'bank_transfer', paymentLabel: 'Bank Transfer', date: new Date(Date.now() - 86400000).toISOString(), createdAt: new Date(Date.now() - 86400000).toISOString(), balanceAfter: 25000, description: 'Monthly salary deposit' },
-    { id: 'tx_2c3a4b5d', type: 'WITHDRAW', amount: 350.50, fee: 5, method: 'bank_transfer', paymentLabel: 'HNB ••••1234', withdrawalStatus: 'completed', destination: 'HNB ••••1234', date: new Date(Date.now() - 172800000).toISOString(), createdAt: new Date(Date.now() - 172800000).toISOString(), balanceAfter: 20000, description: 'Withdrawal to HNB' },
-    { id: 'tx_9e8d7c6b', type: 'DEPOSIT', amount: 1200, fee: 30, method: 'card', paymentLabel: 'Visa ••••4242', date: new Date(Date.now() - 432000000).toISOString(), createdAt: new Date(Date.now() - 432000000).toISOString(), balanceAfter: 20355.50, description: 'Top-up via Visa card' },
-    { id: 'tx_1a2b3c4d', type: 'WITHDRAW', amount: 50, fee: 0, method: 'mobile_wallet', paymentLabel: 'Google Pay', withdrawalStatus: 'completed', destination: 'Google Pay', date: new Date(Date.now() - 604800000).toISOString(), createdAt: new Date(Date.now() - 604800000).toISOString(), balanceAfter: 19155.50, description: 'Mobile wallet transfer' },
+    { id: 'tx_8f7d9a1b', type: 'DEPOSIT', amount: 5000, fee: 0, method: 'bank_transfer', paymentLabel: 'Bank Transfer', date: new Date(Date.now() - 86400000).toISOString() },
+    { id: 'tx_2c3a4b5d', type: 'WITHDRAW', amount: 350.50, fee: 5, method: 'bank_transfer', paymentLabel: 'HNB ••••1234', withdrawalStatus: 'completed', destination: 'HNB ••••1234', date: new Date(Date.now() - 172800000).toISOString() },
+    { id: 'tx_9e8d7c6b', type: 'DEPOSIT', amount: 1200, fee: 30, method: 'card', paymentLabel: 'Visa ••••4242', date: new Date(Date.now() - 432000000).toISOString() },
+    { id: 'tx_1a2b3c4d', type: 'WITHDRAW', amount: 50, fee: 0, method: 'mobile_wallet', paymentLabel: 'Google Pay', withdrawalStatus: 'completed', destination: 'Google Pay', date: new Date(Date.now() - 604800000).toISOString() },
 ];
 
 // Simulated saved accounts for the "saved destinations" feature
@@ -38,9 +38,6 @@ export const transactionService = {
                     method: data.method,
                     paymentLabel: data.paymentLabel,
                     date: new Date().toISOString(),
-                    createdAt: new Date().toISOString(),
-                    balanceAfter: mockBalance + data.amount - data.fee,
-                    description: `Deposit via ${data.paymentLabel}`,
                 };
                 mockTransactions.unshift(newTx);
                 updateBalance(data.amount);
@@ -77,9 +74,6 @@ export const transactionService = {
                     estimatedArrival,
                     destination: data.destination,
                     date: new Date().toISOString(),
-                    createdAt: new Date().toISOString(),
-                    balanceAfter: mockBalance - data.amount - data.fee,
-                    description: `Withdrawal to ${data.destination}`,
                 };
                 mockTransactions.unshift(newTx);
                 updateBalance(-(data.amount + data.fee));
