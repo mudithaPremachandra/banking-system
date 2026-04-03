@@ -105,8 +105,8 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
     // ── Step 3: Amount validation ────────────────────────────────────────────
     const validateAmount = (): boolean => {
         if (!amount || numAmount <= 0) { setAmountError('Please enter an amount'); return false; }
-        if (numAmount < MIN_AMOUNT) { setAmountError(`Minimum deposit is $${MIN_AMOUNT}`); return false; }
-        if (numAmount > MAX_AMOUNT) { setAmountError(`Maximum deposit is $${MAX_AMOUNT.toLocaleString()}`); return false; }
+        if (numAmount < MIN_AMOUNT) { setAmountError(`Minimum deposit is Rs ${MIN_AMOUNT}`); return false; }
+        if (numAmount > MAX_AMOUNT) { setAmountError(`Maximum deposit is Rs ${MAX_AMOUNT.toLocaleString()}`); return false; }
         setAmountError('');
         return true;
     };
@@ -260,7 +260,7 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                             <p className={`text-sm font-semibold leading-tight mb-0.5 ${selected ? 'text-white' : 'text-gray-200'}`}>{m.label}</p>
                                             <p className="text-xs text-gray-500">{m.description}</p>
                                             <p className={`text-xs mt-1.5 font-medium ${selected ? 'text-banking-green' : 'text-gray-500'}`}>
-                                                {m.feeRate === 0 ? 'No fee' : m.feeType === 'percent' ? `${m.feeRate}% fee` : `$${m.feeRate} fee`}
+                                                {m.feeRate === 0 ? 'No fee' : m.feeType === 'percent' ? `${m.feeRate}% fee` : `Rs ${m.feeRate} fee`}
                                             </p>
                                         </button>
                                     );
@@ -439,9 +439,9 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
 
                             {/* Amount input */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (USD)</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (LKR)</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-lg">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-lg">Rs</span>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -469,7 +469,7 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                 >
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Deposit Amount</span>
-                                        <span className="text-white">${numAmount.toFixed(2)}</span>
+                                        <span className="text-white">Rs {numAmount.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Processing Fee
@@ -478,12 +478,12 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                             )}
                                         </span>
                                         <span className={fee > 0 ? 'text-amber-400' : 'text-Chamber-400 text-xs font-medium mt-0.5'}>
-                                            {fee > 0 ? `$${fee.toFixed(2)}` : 'FREE'}
+                                            {fee > 0 ? `Rs ${fee.toFixed(2)}` : 'FREE'}
                                         </span>
                                     </div>
                                     <div className="border-t border-white/10 pt-2.5 flex justify-between">
                                         <span className="font-semibold text-sm text-white">Total Charged</span>
-                                        <span className="font-bold text-banking-green">${total.toFixed(2)}</span>
+                                        <span className="font-bold text-banking-green">Rs {total.toFixed(2)}</span>
                                     </div>
                                 </motion.div>
                             )}

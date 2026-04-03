@@ -117,8 +117,8 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
 
     const validateAmount = (): boolean => {
         if (!amount || numAmount <= 0) { setAmountError('Please enter an amount'); return false; }
-        if (numAmount < MIN_AMOUNT) { setAmountError(`Minimum withdrawal is $${MIN_AMOUNT}`); return false; }
-        if (numAmount > MAX_AMOUNT) { setAmountError(`Daily limit is $${MAX_AMOUNT.toLocaleString()}`); return false; }
+        if (numAmount < MIN_AMOUNT) { setAmountError(`Minimum withdrawal is Rs ${MIN_AMOUNT}`); return false; }
+        if (numAmount > MAX_AMOUNT) { setAmountError(`Daily limit is Rs ${MAX_AMOUNT.toLocaleString()}`); return false; }
         if (numAmount + fee > currentBalance) { setAmountError('Insufficient balance for this withdrawal + fee'); return false; }
         setAmountError('');
         return true;
@@ -297,7 +297,7 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
                                             <p className={`text-sm font-semibold leading-tight mb-0.5 ${selected ? 'text-white' : 'text-gray-200'}`}>{m.label}</p>
                                             <p className="text-xs text-gray-500">{m.description}</p>
                                             <p className={`text-xs mt-1.5 font-medium ${selected ? 'text-orange-400' : 'text-gray-500'}`}>
-                                                {m.feeFlat === 0 ? 'No fee' : `$${m.feeFlat} fee`}
+                                                {m.feeFlat === 0 ? 'No fee' : `Rs ${m.feeFlat} fee`}
                                             </p>
                                         </button>
                                     );
@@ -440,9 +440,9 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
 
                             {/* Amount input */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (USD)</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (LKR)</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-lg">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-lg">Rs</span>
                                     <input
                                         type="number" step="0.01" placeholder="0.00"
                                         value={amount}
@@ -474,18 +474,18 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
                                 >
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Withdrawal Amount</span>
-                                        <span className="text-white">${numAmount.toFixed(2)}</span>
+                                        <span className="text-white">Rs {numAmount.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-400">Processing Fee</span>
                                         <span className={fee > 0 ? 'text-amber-400' : 'text-Chamber-400 text-xs font-medium mt-0.5'}>
-                                            {fee > 0 ? `-$${fee.toFixed(2)}` : 'FREE'}
+                                            {fee > 0 ? `-Rs ${fee.toFixed(2)}` : 'FREE'}
                                         </span>
                                     </div>
                                     <div className="border-t border-white/10 pt-2.5 flex justify-between">
                                         <span className="font-semibold text-sm text-white">You Receive</span>
                                         <span className={`font-bold ${youReceive < 0 ? 'text-red-400' : 'text-banking-green'}`}>
-                                            ${Math.max(youReceive, 0).toFixed(2)}
+                                            Rs {Math.max(youReceive, 0).toFixed(2)}
                                         </span>
                                     </div>
                                 </motion.div>

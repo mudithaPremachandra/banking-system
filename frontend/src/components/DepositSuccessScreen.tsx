@@ -87,7 +87,7 @@ export const DepositSuccessScreen = ({
 
                 {/* Amount */}
                 <div className="text-5xl font-bold text-banking-green mb-6">
-                    +${amount.toFixed(2)}
+                    +Rs {amount.toFixed(2)}
                 </div>
 
                 {/* Details card */}
@@ -109,12 +109,12 @@ export const DepositSuccessScreen = ({
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Processing Fee</span>
-                        <span className={fee > 0 ? 'text-amber-400 text-xs' : 'text-gray-300 text-xs'}>{fee > 0 ? `$${fee.toFixed(2)}` : 'Free'}</span>
+                        <span className={fee > 0 ? 'text-amber-400 text-xs' : 'text-gray-300 text-xs'}>{fee > 0 ? `Rs ${fee.toFixed(2)}` : 'Free'}</span>
                     </div>
                     <div className="border-t border-white/10 pt-3 flex justify-between">
                         <span className="text-sm font-semibold text-white">New Balance</span>
                         <span className="text-banking-green font-bold">
-                            ${animatedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            Rs {animatedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                     </div>
                 </div>

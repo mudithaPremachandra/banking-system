@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FileText, Download } from 'lucide-react';
+import { X, FileText, Download, Loader2 } from 'lucide-react';
+import { transactionService } from '../services/transactionService';
 
 interface DocumentsModalProps {
     isOpen: boolean;
@@ -8,19 +9,59 @@ interface DocumentsModalProps {
 }
 
 export const DocumentsModal = ({ isOpen, onClose }: DocumentsModalProps) => {
-    const [selectedMonth, setSelectedMonth] = useState('March');
-    const [selectedYear, setSelectedYear] = useState('2026');
+    const [isGenerating, setIsGenerating] = useState(false);
 
-    const documents = [
-        { name: 'March 2026 Statement', date: 'Mar 31, 2026', type: 'PDF', size: '2.4 MB' },
-        { name: 'February 2026 Statement', date: 'Feb 28, 2026', type: 'PDF', size: '2.1 MB' },
-        { name: 'January 2026 Statement', date: 'Jan 31, 2026', type: 'PDF', size: '1.9 MB' },
-        { name: 'December 2025 Statement', date: 'Dec 31, 2025', type: 'PDF', size: '2.3 MB' },
-        { name: 'Tax Document 2025', date: 'Dec 31, 2025', type: 'PDF', size: '356 KB' },
-    ];
+    const generateStatement = async (format: 'csv' | 'txt') => {
+        setIsGenerating(true);
+        try {
+            const data = await transactionService.getHistory(1, 100);
+            const txs = data.transactions;
 
-    const years = ['2026', '2025', '2024'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            if (format === 'csv') {
+                const headers = ['Transaction ID', 'Type', 'Amount (LKR)', 'Balance After', 'Description', 'Date'];
+                const rows = txs.map((tx) => [
+                    tx.id,
+                    tx.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal',
+                    tx.amount,
+                    tx.balanceAfter,
+                    tx.description || '',
+                    new Date(tx.date || tx.createdAt).toLocaleString(),
+                ]);
+                const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+                downloadFile(csvContent, `statement_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+            } else {
+                let content = `ACCOUNT STATEMENT\nGenerated: ${new Date().toLocaleString()}\n\n`;
+                content += '='.repeat(60) + '\n\n';
+                if (txs.length === 0) {
+                    content += 'No transactions found.\n';
+                } else {
+                    txs.forEach((tx) => {
+                        const type = tx.type === 'DEPOSIT' ? 'DEPOSIT' : 'WITHDRAWAL';
+                        const sign = tx.type === 'DEPOSIT' ? '+' : '-';
+                        const date = new Date(tx.date || tx.createdAt).toLocaleString();
+                        content += `ID: ${tx.id}\nType: ${type}\nAmount: ${sign}Rs ${Number(tx.amount).toFixed(2)}\nBalance After: Rs ${Number(tx.balanceAfter).toFixed(2)}\nDescription: ${tx.description || '-'}\nDate: ${date}\n\n`;
+                    });
+                }
+                content += '='.repeat(60) + '\n';
+                content += `Total Transactions: ${txs.length}\n`;
+                downloadFile(content, `statement_${new Date().toISOString().split('T')[0]}.txt`, 'text/plain');
+            }
+        } catch (err) {
+            console.error('Failed to generate statement', err);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const downloadFile = (content: string, filename: string, mimeType: string) => {
+        const blob = new Blob([content], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    };
 
     return (
         <AnimatePresence>
@@ -60,49 +101,54 @@ export const DocumentsModal = ({ isOpen, onClose }: DocumentsModalProps) => {
 
                         {/* Content */}
                         <div className="p-6 space-y-5 max-h-96 overflow-y-auto">
-                            {/* Date Filter */}
-                            <div className="flex gap-2">
-                                <select
-                                    value={selectedMonth}
-                                    onChange={(e) => setSelectedMonth(e.target.value)}
-                                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-banking-light transition-colors"
-                                >
-                                    {months.map(month => (
-                                        <option key={month} value={month} className="bg-gray-900">{month}</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={selectedYear}
-                                    onChange={(e) => setSelectedYear(e.target.value)}
-                                    className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-banking-light transition-colors"
-                                >
-                                    {years.map(year => (
-                                        <option key={year} value={year} className="bg-gray-900">{year}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <p className="text-sm text-gray-300">
+                                Generate and download your account statement with all transaction history.
+                            </p>
 
-                            {/* Documents List */}
-                            <div className="space-y-2">
-                                {documents.map((doc, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <FileText className="w-5 h-5 text-purple-400 flex-shrink-0" />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-medium text-white truncate">{doc.name}</p>
-                                                <p className="text-xs text-gray-400">{doc.date} • {doc.type} • {doc.size}</p>
-                                            </div>
+                            {/* Download Options */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => generateStatement('csv')}
+                                    disabled={isGenerating}
+                                    className="w-full flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-5 h-5 text-green-400" />
+                                        <div className="text-left">
+                                            <p className="text-sm font-medium text-white">CSV Statement</p>
+                                            <p className="text-xs text-gray-400">Spreadsheet-compatible format</p>
                                         </div>
-                                        <button className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0">
-                                            <Download className="w-4 h-4 text-banking-light" />
-                                        </button>
                                     </div>
-                                ))}
+                                    {isGenerating ? (
+                                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                    ) : (
+                                        <Download className="w-5 h-5 text-banking-light" />
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={() => generateStatement('txt')}
+                                    disabled={isGenerating}
+                                    className="w-full flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-5 h-5 text-purple-400" />
+                                        <div className="text-left">
+                                            <p className="text-sm font-medium text-white">Text Statement</p>
+                                            <p className="text-xs text-gray-400">Plain text report format</p>
+                                        </div>
+                                    </div>
+                                    {isGenerating ? (
+                                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                    ) : (
+                                        <Download className="w-5 h-5 text-banking-light" />
+                                    )}
+                                </button>
                             </div>
 
                             {/* Info Box */}
                             <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                                <p className="text-xs text-gray-300">📋 <strong>Monthly statements</strong> are generated on the last day of each month and are available for download as PDF files for your records.</p>
+                                <p className="text-xs text-gray-300">Statements include your full transaction history (up to 100 most recent transactions). For a complete record, use the CSV export from the Transactions page.</p>
                             </div>
                         </div>
 

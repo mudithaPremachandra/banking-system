@@ -26,7 +26,7 @@ export const WithdrawPage = () => {
                 <h1 className="text-2xl font-bold tracking-tight">Withdraw</h1>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     <WithdrawForm onSuccess={fetchBalance} currentBalance={balance} />
-                    <BalanceCard balance={balance} currency="USD" showQuickActions={false} />
+                    <BalanceCard balance={balance} currency="LKR" showQuickActions={false} />
                 </div>
             </div>
         </DashboardLayout>

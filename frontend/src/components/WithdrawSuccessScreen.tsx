@@ -98,10 +98,10 @@ export const WithdrawSuccessScreen = ({ transaction, previousBalance, newBalance
 
                 {/* Amount */}
                 <div className="text-5xl font-bold text-orange-400 mb-2">
-                    -${transaction.amount.toFixed(2)}
+                    -Rs {transaction.amount.toFixed(2)}
                 </div>
                 <p className="text-sm text-gray-500 mb-6">
-                    Fee: {(transaction.fee || 0) > 0 ? `-$${transaction.fee?.toFixed(2)}` : 'Free'} · You receive: <span className="text-white font-medium">${(transaction.amount - (transaction.fee || 0)).toFixed(2)}</span>
+                    Fee: {(transaction.fee || 0) > 0 ? `-Rs ${transaction.fee?.toFixed(2)}` : 'Free'} · You receive: <span className="text-white font-medium">Rs {(transaction.amount - (transaction.fee || 0)).toFixed(2)}</span>
                 </p>
 
                 {/* Status badge */}
@@ -134,7 +134,7 @@ export const WithdrawSuccessScreen = ({ transaction, previousBalance, newBalance
                     <div className="border-t border-white/10 pt-3 flex justify-between">
                         <span className="text-sm font-semibold text-white">New Balance</span>
                         <span className="text-orange-400 font-bold">
-                            ${animatedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            Rs {animatedBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                     </div>
                 </div>

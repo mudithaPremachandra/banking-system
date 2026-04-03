@@ -79,15 +79,15 @@ export const WithdrawConfirmModal = ({
                         <div className="space-y-3 mb-5">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Withdrawal Amount</span>
-                                <span className="text-white font-medium">${amount.toFixed(2)}</span>
+                                <span className="text-white font-medium">Rs {amount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Processing Fee</span>
-                                <span className={fee > 0 ? 'text-amber-400 font-medium' : 'text-gray-300'}>{fee > 0 ? `-$${fee.toFixed(2)}` : 'Free'}</span>
+                                <span className={fee > 0 ? 'text-amber-400 font-medium' : 'text-gray-300'}>{fee > 0 ? `-Rs ${fee.toFixed(2)}` : 'Free'}</span>
                             </div>
                             <div className="border-t border-white/10 pt-3 flex justify-between">
                                 <span className="font-semibold text-white">You Receive</span>
-                                <span className="font-bold text-banking-green text-lg">${youReceive.toFixed(2)}</span>
+                                <span className="font-bold text-banking-green text-lg">Rs {youReceive.toFixed(2)}</span>
                             </div>
                         </div>
 

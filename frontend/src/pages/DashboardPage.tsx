@@ -96,38 +96,45 @@ export const DashboardPage = () => {
                 setTransactions(txData);
                 setLastBalanceUpdate(new Date());
 
-                // Add notifications for recent transactions
+                // Add notifications for recent transactions (deduplicated via sessionStorage)
+                const notifiedKey = 'banking_notified_txs';
+                const notified = new Set<string>(JSON.parse(sessionStorage.getItem(notifiedKey) || '[]'));
                 const now = new Date();
                 txData.slice(0, 3).forEach((tx) => {
-                    const txDate = new Date(tx.date);
+                    if (notified.has(tx.id)) return;
+                    const txDate = new Date(tx.date || tx.createdAt);
                     const minutesAgo = (now.getTime() - txDate.getTime()) / 60000;
 
                     // Show notification if transaction is within last 5 minutes
                     if (minutesAgo < 5) {
+                        notified.add(tx.id);
                         if (tx.type === 'DEPOSIT') {
                             addNotification(
                                 'SUCCESS',
                                 'Deposit Received',
-                                `You received ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount)}`,
+                                `You received ${new Intl.NumberFormat('en-US', { style: 'currency', currency: balanceData.currency || 'LKR' }).format(tx.amount)}`,
                                 { transactionId: tx.id, amount: tx.amount }
                             );
                         } else {
                             addNotification(
                                 'TRANSACTION',
                                 'Withdrawal Processed',
-                                `You withdrew ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount)}`,
+                                `You withdrew ${new Intl.NumberFormat('en-US', { style: 'currency', currency: balanceData.currency || 'LKR' }).format(tx.amount)}`,
                                 { transactionId: tx.id, amount: tx.amount }
                             );
                         }
                     }
                 });
+                sessionStorage.setItem(notifiedKey, JSON.stringify([...notified]));
 
-                // Check for low balance (threshold: $500)
-                if (balanceData.balance < 500 && balanceData.balance > 0) {
+                // Check for low balance (deduplicated per session)
+                const lowBalKey = 'banking_low_bal_notified';
+                if (balanceData.balance < 500 && balanceData.balance > 0 && !sessionStorage.getItem(lowBalKey)) {
+                    sessionStorage.setItem(lowBalKey, '1');
                     addNotification(
                         'LOW_BALANCE',
                         'Low Balance Alert',
-                        `Your account balance is ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(balanceData.balance)}. Consider depositing funds.`,
+                        `Your account balance is ${new Intl.NumberFormat('en-US', { style: 'currency', currency: balanceData.currency || 'LKR' }).format(balanceData.balance)}. Consider depositing funds.`,
                         { balance: balanceData.balance }
                     );
                 }
@@ -138,7 +145,7 @@ export const DashboardPage = () => {
             }
         };
         fetchData();
-    }, [addNotification]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('en-US', { 
@@ -206,7 +213,7 @@ export const DashboardPage = () => {
         let lastMonthExpenses = 0;
 
         transactions.forEach((tx) => {
-            const txDate = new Date(tx.date);
+            const txDate = new Date(tx.date || tx.createdAt);
             const txMonth = txDate.getMonth();
             const txYear = txDate.getFullYear();
             const amount = tx.amount || 0;
@@ -320,7 +327,7 @@ export const DashboardPage = () => {
                                     <div>
                                         <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Available Balance</p>
                                         <h2 className="text-4xl font-bold tracking-tight text-white">
-                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: balance?.currency || 'USD' }).format(balance?.balance || 0)}
+                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: balance?.currency || 'LKR' }).format(balance?.balance || 0)}
                                         </h2>
                                     </div>
                                     <div className={`text-sm font-semibold px-3 py-1 rounded-full ${balanceChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
@@ -359,7 +366,7 @@ export const DashboardPage = () => {
                                                     minHeight: '3px',
                                                     opacity: index === 6 ? 1 : 0.7
                                                 }}
-                                                title={new Intl.NumberFormat('en-US', { style: 'currency', currency: balance?.currency || 'USD' }).format(value)}
+                                                title={new Intl.NumberFormat('en-US', { style: 'currency', currency: balance?.currency || 'LKR' }).format(value)}
                                             />
                                         ))}
                                     </div>

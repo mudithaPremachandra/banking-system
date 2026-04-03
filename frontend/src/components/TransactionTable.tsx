@@ -38,13 +38,13 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
         // Filter by date range
         if (startDate) {
             const start = new Date(startDate);
-            result = result.filter((tx) => new Date(tx.date) >= start);
+            result = result.filter((tx) => new Date(tx.date || tx.createdAt) >= start);
         }
 
         if (endDate) {
             const end = new Date(endDate);
             end.setHours(23, 59, 59, 999);
-            result = result.filter((tx) => new Date(tx.date) <= end);
+            result = result.filter((tx) => new Date(tx.date || tx.createdAt) <= end);
         }
 
         return result;
@@ -83,7 +83,7 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
             tx.id,
             tx.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal',
             tx.amount,
-            new Date(tx.date).toLocaleDateString(),
+            new Date(tx.date || tx.createdAt).toLocaleDateString(),
         ]);
 
         const csvContent = [
@@ -114,8 +114,8 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
         filteredTransactions.forEach((tx) => {
             const typeLabel = tx.type === 'DEPOSIT' ? 'DEPOSIT' : 'WITHDRAWAL';
             const sign = tx.type === 'DEPOSIT' ? '+' : '-';
-            const date = new Date(tx.date).toLocaleDateString();
-            content += `ID: ${tx.id}\nType: ${typeLabel}\nAmount: ${sign}$${tx.amount.toFixed(2)}\nDate: ${date}\n\n`;
+            const date = new Date(tx.date || tx.createdAt).toLocaleDateString();
+            content += `ID: ${tx.id}\nType: ${typeLabel}\nAmount: ${sign}Rs ${tx.amount.toFixed(2)}\nDate: ${date}\n\n`;
         });
 
         content += '='.repeat(80) + '\n';
@@ -257,11 +257,11 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
                                     <td className="px-6 py-4 font-semibold">
                                         <span className={tx.type === 'DEPOSIT' ? 'text-green-400' : 'text-red-400'}>
                                             {tx.type === 'DEPOSIT' ? '+' : '-'}
-                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount)}
+                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'LKR' }).format(tx.amount)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-gray-400 group-hover:text-gray-300 transition-colors">
-                                        {new Date(tx.date).toLocaleDateString(undefined, {
+                                        {new Date(tx.date || tx.createdAt).toLocaleDateString(undefined, {
                                             year: 'numeric',
                                             month: 'short',
                                             day: 'numeric',
