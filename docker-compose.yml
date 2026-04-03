@@ -22,8 +22,6 @@
 # 5. Ensure the init-databases.sql script runs on first postgres startup
 # =============================================================================
 
-version: "3.8"
-
 services:
   # ---------------------------------------------------------------------------
   # PostgreSQL — Single instance, three databases
