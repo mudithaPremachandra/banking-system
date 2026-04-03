@@ -33,7 +33,9 @@
  * mockFindUserByEmail.mockResolvedValue(null); // no user found
  *
  * TODO (Kawindi): Implement all test cases above
- * Coordinate with Sandun as he finishes implementing auth.service.ts
+ * Coordinate with Sandun as he 
+ * 
+ * nhes implementing auth.service.ts
  */
 import bcrypt from "bcryptjs";
 import * as authRepository from "../repositories/auth.repository";

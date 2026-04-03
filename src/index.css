@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&family=Outfit:wght@300;400;600;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white font-sans antialiased;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Applying clamp for base text size to scale */
+  html {
+    font-size: clamp(14px, 1.2vw, 16px);
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    backdrop-filter: blur(24px) saturate(1.4);
+    background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-panel {
+    @apply bg-glass-light border border-glass-border backdrop-blur-huge shadow-2xl;
+  }
+
+  .glass-dark {
+    @apply bg-glass-dark border border-white/5 backdrop-blur-3xl;
+  }
+
+  /* Liquid sheen animation for high-end feel */
+  .liquid-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .liquid-sheen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent);
+    transform: skewX(-20deg);
+    animation: sheen 8s infinite ease-in-out;
+  }
+
+  @keyframes sheen {
+    0% {
+      left: -100%;
+    }
+
+    20% {
+      left: 200%;
+    }
+
+    100% {
+      left: 200%;
+    }
+  }
+
+  /* Glossy sweep animation for metallic/glass text effect */
+  .glossy-sweep {
+    background-image: linear-gradient(
+      120deg,
+      #ffffff 0%,
+      #e5e7eb 40%,
+      #9ca3af 60%,
+      #f3f4f6 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glossySweep 4s ease-in-out infinite;
+  }
+
+  .glossy-sweep:hover {
+    animation: glossySweep 2s ease-in-out infinite;
+  }
+
+  @keyframes glossySweep {
+    0% {
+      background-position: -200% 0;
+    }
+
+    50% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}

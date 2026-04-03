@@ -16,6 +16,9 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Re-export useAuth hook for convenience
+export { useAuth } from '../hooks/useAuth';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
