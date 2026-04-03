@@ -41,31 +41,23 @@ export async function createOTP(data: {
   otpHash: string;
   expiresAt: Date;
 }) {
-  // TODO (Geethika): Implement
-  // return prisma.oTP.create({ data });
-  throw new Error("TODO: Geethika — implement createOTP");
+  return prisma.oTP.create({ data });
 }
 
 export async function findLatestUnusedOTP(userId: string) {
-  // TODO (Geethika): Implement
-  // return prisma.oTP.findFirst({
-  //   where: { userId, used: false },
-  //   orderBy: { createdAt: "desc" },
-  // });
-  throw new Error("TODO: Geethika — implement findLatestUnusedOTP");
+  return prisma.oTP.findFirst({
+    where: { userId, used: false },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function markAsUsed(id: string) {
-  // TODO (Geethika): Implement
-  // return prisma.oTP.update({ where: { id }, data: { used: true } });
-  throw new Error("TODO: Geethika — implement markAsUsed");
+  return prisma.oTP.update({ where: { id }, data: { used: true } });
 }
 
 export async function invalidateExistingOTPs(userId: string) {
-  // TODO (Geethika): Implement
-  // return prisma.oTP.updateMany({
-  //   where: { userId, used: false },
-  //   data: { used: true },
-  // });
-  throw new Error("TODO: Geethika — implement invalidateExistingOTPs");
+  return prisma.oTP.updateMany({
+    where: { userId, used: false },
+    data: { used: true },
+  });
 }

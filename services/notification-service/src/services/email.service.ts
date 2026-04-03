@@ -41,6 +41,7 @@
  * - Consider adding retry logic for transient SMTP failures
  */
 import nodemailer from "nodemailer";
+import transporter, { SMTP_FROM } from "../config/mailer";
 
 // TODO (Geethika): Create Nodemailer transporter
 // const transporter = nodemailer.createTransport({
@@ -54,33 +55,36 @@ import nodemailer from "nodemailer";
 // });
 
 export async function sendOTPEmail(to: string, otp: string): Promise<void> {
-  // TODO (Geethika): Implement email sending
-  //
-  // const mailOptions = {
-  //   from: process.env.SMTP_FROM || "noreply@bankingsystem.dev",
-  //   to,
-  //   subject: "Your Banking System OTP Code",
-  //   html: `
-  //     <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">
-  //       <h2 style="color: #333;">Banking System</h2>
-  //       <p>Your one-time password (OTP) is:</p>
-  //       <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; border-radius: 8px;">
-  //         ${otp}
-  //       </div>
-  //       <p style="color: #666; margin-top: 16px;">This code expires in <strong>5 minutes</strong>.</p>
-  //       <p style="color: #999; font-size: 12px;">Do not share this code with anyone. If you did not request this code, please ignore this email.</p>
-  //     </div>
-  //   `,
-  // };
-  //
-  // const info = await transporter.sendMail(mailOptions);
-  //
-  // // In development with Ethereal, log the preview URL
-  // if (process.env.SMTP_HOST?.includes("ethereal")) {
-  //   console.log("[Email] Preview URL:", nodemailer.getTestMessageUrl(info));
-  // }
+  const hasSmtpCredentials =
+    Boolean(process.env.SMTP_USER) && Boolean(process.env.SMTP_PASS);
 
-  // TEMPORARY: Log OTP to console for development
-  console.log(`[Notification Service] OTP for ${to}: ${otp}`);
-  console.log("TODO: Geethika — implement actual email sending via Nodemailer");
+  // Keep local development unblocked when SMTP creds are not set.
+  if (!hasSmtpCredentials) {
+    console.log(`[Notification Service] [DEV] OTP for ${to}: ${otp}`);
+    return;
+  }
+
+  const info = await transporter.sendMail({
+    from: SMTP_FROM,
+    to,
+    subject: "Your Banking System OTP Code",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Banking System</h2>
+        <p>Your one-time password (OTP) is:</p>
+        <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; border-radius: 8px;">
+          ${otp}
+        </div>
+        <p style="color: #666; margin-top: 16px;">This code expires in <strong>5 minutes</strong>.</p>
+        <p style="color: #999; font-size: 12px;">Do not share this code with anyone. If you did not request this code, please ignore this email.</p>
+      </div>
+    `,
+  });
+
+  if (process.env.SMTP_HOST?.includes("ethereal")) {
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log("[Notification Service] Ethereal preview:", previewUrl);
+    }
+  }
 }

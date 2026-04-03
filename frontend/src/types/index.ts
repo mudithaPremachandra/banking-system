@@ -1,75 +1,68 @@
-/**
- * Shared TypeScript Types for Frontend
- * OWNER: Muditha (Frontend Developer)
- *
- * INSTRUCTIONS FOR AI AGENT:
- * These types must stay in sync with the backend API response shapes.
- * The backend uses the error envelope: { success: false, error: { code, message } }
- * The backend uses the success envelope: { success: true, data: { ... } }
- *
- * TODO (Muditha):
- * - Keep these types updated as backend developers finalize their response shapes
- * - Coordinate with Sandun (Auth), Disaan (Account), and Sanjaya (Gateway)
- */
-
-// --- User & Auth ---
-
 export interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  phone?: string;
+    id: string;
+    email: string;
+    fullName?: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken: string;
+    token: string;
+    user: User;
 }
 
-export interface OTPVerifyResponse {
-  verified: boolean;
+export interface AccountBalance {
+    balance: number;
+    currency: string;
+    accountType?: string;
+    accountNumber?: string;
 }
 
-// --- Account & Transactions ---
+export type PaymentMethod = 'bank_transfer' | 'card' | 'mobile_wallet' | 'crypto';
 
-export interface Account {
-  id: string;
-  userId: string;
-  accountNumber: string;
-  balance: number;
-  currency: string;
+export type WithdrawalStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface SavedAccount {
+    id: string;
+    method: PaymentMethod;
+    label: string;       // e.g. "HNB ****1234"
+    details: Record<string, string>;
 }
-
-export type TransactionType = "DEPOSIT" | "WITHDRAWAL";
 
 export interface Transaction {
-  id: string;
-  accountId: string;
-  type: TransactionType;
-  amount: number;
-  balanceAfter: number;
-  description?: string;
-  createdAt: string;
+    id: string;
+    type: 'DEPOSIT' | 'WITHDRAW';
+    amount: number;
+    date: string;
+    createdAt: string;
+    balanceAfter: number;
+    description?: string;
+    method?: PaymentMethod;
+    fee?: number;
+    paymentLabel?: string;
+    // Withdrawal-specific
+    withdrawalStatus?: WithdrawalStatus;
+    estimatedArrival?: string;
+    destination?: string;
 }
 
-export interface TransactionListResponse {
-  transactions: Transaction[];
-  total: number;
-  page: number;
+export interface TransactionsResponse {
+    transactions: Transaction[];
+    total: number;
+    page: number;
+    totalPages: number;
 }
 
-export interface DepositWithdrawResponse {
-  transaction: Transaction;
-  newBalance: number;
-}
+export type NotificationType = 'TRANSACTION' | 'LOW_BALANCE' | 'SUCCESS' | 'WARNING';
 
-// --- API Error ---
-
-export interface ApiError {
-  success: false;
-  error: {
-    code: string;
+export interface Notification {
+    id: string;
+    type: NotificationType;
+    title: string;
     message: string;
-  };
+    timestamp: Date;
+    read: boolean;
+    data?: {
+        transactionId?: string;
+        amount?: number;
+        balance?: number;
+    };
 }
