@@ -33,10 +33,9 @@ export async function sendOTP(data: {
   email: string;
 }): Promise<void> {
   try {
-    // TODO (Sandun): Make the HTTP call to Notification Service
-    // await axios.post(`${NOTIFICATION_SERVICE_URL}/otp/send`, data);
+    await axios.post(`${NOTIFICATION_SERVICE_URL}/otp/send`, data);
     console.log(
-      `[Auth Service] TODO: Send OTP request to Notification Service for ${data.email}`
+      `[Auth Service] OTP request sent to Notification Service for ${data.email}`
     );
   } catch (error) {
     // Log but don't throw — OTP failure shouldn't block login

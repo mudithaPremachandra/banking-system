@@ -1,16 +1,15 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../types';
 import { authService } from '../services/authService';
-import { setAuthToken } from '../services/api';
+import { setAuthToken, setRefreshToken, getAuthToken, getRefreshToken, clearTokens } from '../services/api';
 
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     loading: boolean;
-    login: (credentials: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
-    verifyOTP: (data: any) => Promise<void>;
+    login: (credentials: { email: string; password: string }) => Promise<{ userId: string; email: string }>;
+    verifyOTP: (params: { userId: string; otpCode: string }) => Promise<void>;
     logout: () => void;
 }
 
@@ -23,52 +22,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
+    // Restore session on mount if tokens exist
     useEffect(() => {
-        // In-memory token storage means we don't restore session on reload.
-        // If we wanted to, we'd add an endpoint to fetch current user based on cookie/session
-        setLoading(false);
+        const restoreSession = async () => {
+            const token = getAuthToken();
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const userData = await authService.getMe();
+                setUser(userData);
+            } catch {
+                // Token invalid or expired — clear everything
+                clearTokens();
+            } finally {
+                setLoading(false);
+            }
+        };
+        restoreSession();
     }, []);
 
-    const login = async (credentials: any) => {
+    const login = useCallback(async (credentials: { email: string; password: string }) => {
         setLoading(true);
         try {
-            const { token, user } = await authService.login(credentials);
-            setAuthToken(token);
-            setUser(user);
-            // Store login timestamp for session tracking (as milliseconds since epoch)
+            const { user: userData, accessToken, refreshToken } = await authService.login(credentials);
+            // Store tokens but DON'T set user yet — OTP verification required first
+            setAuthToken(accessToken);
+            setRefreshToken(refreshToken);
             localStorage.setItem('loginTime', Date.now().toString());
+            // Return userId and email so the caller can navigate to OTP page
+            return { userId: userData.id, email: userData.email };
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const register = async (data: any) => {
+    const verifyOTP = useCallback(async (params: { userId: string; otpCode: string }) => {
         setLoading(true);
         try {
-            await authService.register(data);
+            await authService.verifyOTP(params);
+            // OTP verified — now fetch and set user
+            const userData = await authService.getMe();
+            setUser(userData);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const verifyOTP = async (data: any) => {
-        setLoading(true);
-        try {
-            await authService.verifyOTP(data);
-        } finally {
-            setLoading(false);
+    const logout = useCallback(() => {
+        const refresh = getRefreshToken();
+        if (refresh) {
+            authService.logout(refresh).catch(() => {});
         }
-    };
-
-    const logout = () => {
-        setAuthToken(null);
+        clearTokens();
         setUser(null);
-        // Clear session tracking data
-        localStorage.removeItem('loginTime');
-    };
+    }, []);
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, register, verifyOTP, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, verifyOTP, logout }}>
             {children}
         </AuthContext.Provider>
     );

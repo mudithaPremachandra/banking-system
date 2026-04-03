@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Shield, Edit2, Save } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
+import { userService } from '../services/userService';
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -11,18 +13,31 @@ interface ProfileModalProps {
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
-    const [fullName, setFullName] = useState('John Doe');
-    const [phoneNumber, setPhoneNumber] = useState('+1 234 567 8900');
-    const [address, setAddress] = useState('123 Banking Street, Finance City, FC 12345');
+    const [fullName, setFullName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            authService.getMe().then((data) => {
+                setFullName(data.fullName || '');
+                setPhoneNumber(data.phone || '');
+            }).catch(() => {});
+        }
+    }, [isOpen]);
 
     const handleSave = async () => {
         setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSaving(false);
+        setError('');
+        try {
+            await userService.updateProfile({ fullName: fullName || undefined, phone: phoneNumber || undefined });
             setIsEditing(false);
-        }, 1000);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to save profile');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -110,20 +125,11 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                                 )}
                             </div>
 
-                            {/* Address */}
-                            <div>
-                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Address</label>
-                                {isEditing ? (
-                                    <textarea
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        rows={3}
-                                        className="w-full mt-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-banking-light transition-colors resize-none"
-                                    />
-                                ) : (
-                                    <p className="mt-2 text-white text-sm">{address}</p>
-                                )}
-                            </div>
+                            {error && (
+                                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    {error}
+                                </div>
+                            )}
 
                             {/* Account Status */}
                             <div className="bg-white/5 rounded-lg p-3 border border-white/10">

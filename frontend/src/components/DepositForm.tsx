@@ -7,7 +7,6 @@ import {
 import type { PaymentMethod, Transaction } from '../types';
 import { transactionService } from '../services/transactionService';
 import { accountService } from '../services/accountService';
-import { mockBalance } from '../services/accountService';
 import { DepositConfirmModal } from './DepositConfirmModal';
 import { DepositOTPModal } from './DepositOTPModal';
 import { DepositSuccessScreen } from './DepositSuccessScreen';
@@ -120,12 +119,15 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
     // ── OTP flow ─────────────────────────────────────────────────────────────
     const handleConfirm = async () => {
         setShowConfirm(false);
-        await accountService.sendDepositOTP(user?.email || 'user@example.com');
+        if (user?.id && user?.email) {
+            await accountService.sendOTP(user.id, user.email);
+        }
         setShowOTP(true);
     };
 
     const handleVerifyOTP = async (code: string): Promise<boolean> => {
-        const valid = await accountService.verifyDepositOTP(code);
+        if (!user?.id) return false;
+        const valid = await accountService.verifyOTP(user.id, code);
         if (valid) {
             setShowOTP(false);
             await processDeposit();
@@ -134,23 +136,26 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
     };
 
     const handleResendOTP = async () => {
-        await accountService.sendDepositOTP(user?.email || 'user@example.com');
+        if (user?.id && user?.email) {
+            await accountService.sendOTP(user.id, user.email);
+        }
     };
 
     // ── Process ──────────────────────────────────────────────────────────────
     const processDeposit = useCallback(async () => {
         setStep('processing');
-        const prevBal = mockBalance;
-        const result = await transactionService.deposit({
-            amount: numAmount,
-            fee,
-            method: selectedMethod!,
-            paymentLabel: buildPaymentLabel(selectedMethod!, paymentDetails),
-        }) as { success: boolean; transaction: Transaction };
-        onSuccess();
-        setSuccessData({ transaction: result.transaction, prevBalance: prevBal, newBalance: mockBalance });
-        setStep('success');
-    }, [numAmount, fee, selectedMethod, paymentDetails, onSuccess]);
+        try {
+            const balanceBefore = await accountService.getBalance();
+            const prevBal = balanceBefore.balance;
+            const result = await transactionService.deposit(numAmount, `Deposit via ${buildPaymentLabel(selectedMethod!, paymentDetails)}`);
+            onSuccess();
+            setSuccessData({ transaction: result.transaction, prevBalance: prevBal, newBalance: result.newBalance });
+            setStep('success');
+        } catch (err) {
+            console.error('Deposit failed', err);
+            setStep('amount');
+        }
+    }, [numAmount, selectedMethod, paymentDetails, onSuccess]);
 
     // ── Reset ────────────────────────────────────────────────────────────────
     const handleReset = () => {

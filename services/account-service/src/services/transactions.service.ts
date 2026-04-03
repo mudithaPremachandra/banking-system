@@ -63,7 +63,8 @@ import { prisma } from "../lib/prisma";
 type ServiceErrorCode =
   | "INVALID_AMOUNT"
   | "ACCOUNT_NOT_FOUND"
-  | "INSUFFICIENT_FUNDS";
+  | "INSUFFICIENT_FUNDS"
+  | "SELF_TRANSFER";
 
 interface ServiceError extends Error {
   code?: ServiceErrorCode;
@@ -176,6 +177,73 @@ export async function withdraw(
     });
 
     return { transaction, newBalance: Number(newBalance) };
+  });
+}
+
+export async function transfer(
+  senderUserId: string,
+  toAccountNumber: string,
+  amount: number,
+  description?: string
+) {
+  if (amount <= 0) {
+    throw createServiceError("INVALID_AMOUNT", "Amount must be greater than zero");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const senderAccount = await tx.account.findUnique({ where: { userId: senderUserId } });
+    if (!senderAccount) {
+      throw createServiceError("ACCOUNT_NOT_FOUND", "Sender account not found");
+    }
+
+    const recipientAccount = await tx.account.findUnique({ where: { accountNumber: toAccountNumber } });
+    if (!recipientAccount) {
+      throw createServiceError("ACCOUNT_NOT_FOUND", "Recipient account not found");
+    }
+
+    if (senderAccount.id === recipientAccount.id) {
+      throw createServiceError("SELF_TRANSFER", "Cannot transfer to your own account");
+    }
+
+    const amountDecimal = new Decimal(amount);
+    if (senderAccount.balance.lessThan(amountDecimal)) {
+      throw createServiceError("INSUFFICIENT_FUNDS", "Transfer amount exceeds available balance");
+    }
+
+    const senderNewBalance = senderAccount.balance.sub(amountDecimal);
+    const recipientNewBalance = recipientAccount.balance.add(amountDecimal);
+
+    await tx.account.update({
+      where: { id: senderAccount.id },
+      data: { balance: senderNewBalance },
+    });
+
+    await tx.account.update({
+      where: { id: recipientAccount.id },
+      data: { balance: recipientNewBalance },
+    });
+
+    const senderTx = await tx.transaction.create({
+      data: {
+        accountId: senderAccount.id,
+        type: TransactionType.WITHDRAWAL,
+        amount: amountDecimal,
+        balanceAfter: senderNewBalance,
+        description: description || `Transfer to ${toAccountNumber}`,
+      },
+    });
+
+    await tx.transaction.create({
+      data: {
+        accountId: recipientAccount.id,
+        type: TransactionType.DEPOSIT,
+        amount: amountDecimal,
+        balanceAfter: recipientNewBalance,
+        description: `Transfer from ${senderAccount.accountNumber}`,
+      },
+    });
+
+    return { transaction: senderTx, newBalance: Number(senderNewBalance) };
   });
 }
 

@@ -150,6 +150,79 @@ router.post(
   }
 );
 
+// POST /accounts/me/transfer
+router.post(
+  "/me/transfer",
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.userId) {
+        res.status(401).json({
+          success: false,
+          error: { code: "AUTH_REQUIRED", message: "Authentication required" },
+        });
+        return;
+      }
+
+      const { toAccountNumber, amount, description } = req.body;
+      const parsedAmount = parsePositiveAmount(amount);
+
+      if (!toAccountNumber || typeof toAccountNumber !== "string") {
+        res.status(400).json({
+          success: false,
+          error: { code: "INVALID_INPUT", message: "Recipient account number is required" },
+        });
+        return;
+      }
+
+      const result = await transactionsService.transfer(
+        req.userId,
+        toAccountNumber,
+        parsedAmount,
+        description
+      );
+
+      res.json({ transaction: result.transaction, newBalance: result.newBalance });
+    } catch (err) {
+      const e = err as CodedError;
+
+      if (e.code === "INVALID_AMOUNT") {
+        res.status(400).json({
+          success: false,
+          error: { code: "INVALID_AMOUNT", message: e.message },
+        });
+        return;
+      }
+
+      if (e.code === "INSUFFICIENT_FUNDS") {
+        res.status(400).json({
+          success: false,
+          error: { code: "INSUFFICIENT_FUNDS", message: e.message },
+        });
+        return;
+      }
+
+      if (e.code === "ACCOUNT_NOT_FOUND") {
+        res.status(404).json({
+          success: false,
+          error: { code: "ACCOUNT_NOT_FOUND", message: e.message },
+        });
+        return;
+      }
+
+      if (e.code === "SELF_TRANSFER") {
+        res.status(400).json({
+          success: false,
+          error: { code: "SELF_TRANSFER", message: e.message },
+        });
+        return;
+      }
+
+      next(err);
+    }
+  }
+);
+
 // GET /accounts/me/transactions
 router.get(
   "/me/transactions",

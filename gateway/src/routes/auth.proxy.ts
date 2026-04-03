@@ -44,7 +44,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import axios, { AxiosError } from "axios";
 import { config } from "../config";
 import { validate } from "../middleware/zodValidation";
-import { loginSchema, refreshSchema, logoutSchema } from "../schemas";
+import { loginSchema, refreshSchema, logoutSchema, updateProfileSchema, changePasswordSchema } from "../schemas";
 import { jwtVerifyMiddleware } from "../middleware/jwtVerify";
 
 const router = Router();
@@ -139,7 +139,7 @@ router.get(
 // GET /api/auth/me (protected)
 router.get(
   "/me",
-  // TODO (Sanjaya): Add JWT pre-verification middleware here
+  jwtVerifyMiddleware,
   async (req: Request, res: Response, next: NextFunction) => {
       // TODO (Sanjaya): Proxy to Auth Service with Authorization header
       try {
@@ -155,6 +155,56 @@ router.get(
       //   success: false,
       //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Auth Service" },
       // });
+    } catch (err) {
+      return handleAxiosError(err, res, next);
+    }
+  }
+);
+
+// PATCH /api/auth/me/profile (protected)
+router.patch(
+  "/me/profile",
+  jwtVerifyMiddleware,
+  validate(updateProfileSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const response = await axios.patch(`${AUTH_URL}/auth/profile`, req.body, {
+        headers: { Authorization: req.headers.authorization },
+      });
+      res.status(response.status).json(response.data);
+    } catch (err) {
+      return handleAxiosError(err, res, next);
+    }
+  }
+);
+
+// POST /api/auth/me/change-password (protected)
+router.post(
+  "/me/change-password",
+  jwtVerifyMiddleware,
+  validate(changePasswordSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const response = await axios.post(`${AUTH_URL}/auth/change-password`, req.body, {
+        headers: { Authorization: req.headers.authorization },
+      });
+      res.status(response.status).json(response.data);
+    } catch (err) {
+      return handleAxiosError(err, res, next);
+    }
+  }
+);
+
+// GET /api/auth/me/sessions (protected)
+router.get(
+  "/me/sessions",
+  jwtVerifyMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const response = await axios.get(`${AUTH_URL}/auth/sessions`, {
+        headers: { Authorization: req.headers.authorization },
+      });
+      res.status(response.status).json(response.data);
     } catch (err) {
       return handleAxiosError(err, res, next);
     }

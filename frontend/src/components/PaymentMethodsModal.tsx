@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, Shield, Zap } from 'lucide-react';
-import { transactionService } from '../services/transactionService';
-
 interface PaymentMethodsModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -87,7 +85,8 @@ export const PaymentMethodsModal = ({ isOpen, onClose }: PaymentMethodsModalProp
         if (cardNumber.length < 16 || cardExpiry.length < 4 || cardCVC.length < 3) return;
         setIsSaving(true);
         setTimeout(() => {
-            transactionService.saveAccount('card', `Visa ••••${cardNumber.slice(-4)}`, { lastFour: cardNumber.slice(-4) });
+            // TODO: integrate with backend when saved payment methods API is available
+            console.log('Saved card:', cardNumber.slice(-4));
             setIsSaving(false);
             onClose(); // Close modal on success
         }, 1200);

@@ -121,3 +121,58 @@ export async function revokeAllUserTokens(userId: string) {
     data: { revoked: true },
   });
 }
+
+/**
+ * Update user profile fields
+ */
+export async function updateUser(userId: string, data: { fullName?: string; phone?: string }) {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      phone: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * Find user by ID (include passwordHash for password verification)
+ */
+export async function findUserByIdWithPassword(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+  });
+}
+
+/**
+ * Update user password
+ */
+export async function updatePassword(userId: string, passwordHash: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+}
+
+/**
+ * Find active (non-revoked, non-expired) tokens for a user
+ */
+export async function findActiveTokensByUserId(userId: string) {
+  return prisma.token.findMany({
+    where: {
+      userId,
+      revoked: false,
+      expiresAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      expiresAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}

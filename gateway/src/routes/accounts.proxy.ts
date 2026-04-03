@@ -44,8 +44,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import axios from "axios";
 import { config } from "../config";
 import { validate } from "../middleware/zodValidation";
-import { depositSchema, withdrawSchema } from "../schemas";
-import { jwtVerifyMiddleware } from "../middleware/jwtVerify"
+import { depositSchema, withdrawSchema, transferSchema } from "../schemas";
+import { jwtVerifyMiddleware } from "../middleware/jwtVerify";
 
 
 const router = Router();
@@ -151,6 +151,27 @@ router.post(
       //   success: false,
       //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
       // });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/accounts/me/transfer
+router.post(
+  "/me/transfer",
+  validate(transferSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).userId;
+      const response = await axios.post(
+        `${ACCOUNT_URL}/accounts/me/transfer`,
+        req.body,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+      res.json(response.data);
     } catch (err) {
       next(err);
     }

@@ -42,6 +42,7 @@ export const Navbar = () => {
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Deposit', path: '/deposit', icon: ArrowDownCircle },
         { name: 'Withdraw', path: '/withdraw', icon: ArrowUpCircle },
+        { name: 'Transfer', path: '/transfer', icon: ArrowUpCircle },
         { name: 'History', path: '/transactions', icon: ListOrdered },
     ];
 
@@ -105,7 +106,7 @@ export const Navbar = () => {
 
                         {/* Dropdown Menu */}
                         {isMenuOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-56 glass-panel rounded-2xl border border-white/10 shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="absolute top-full right-0 mt-2 w-56 bg-[#1a1d2e]/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div className="px-4 py-3 border-b border-white/10 mb-2">
                                     <p className="text-sm font-medium text-white truncate">{user.email}</p>
                                     <p className="text-xs text-banking-light mt-0.5">Verified Tier 1</p>
@@ -189,11 +190,8 @@ export const Navbar = () => {
                     </>
                 ) : (
                     <div className="flex items-center gap-3">
-                        <Link to="/login" className="px-5 py-2 text-sm font-medium text-white hover:text-banking-light transition-colors">
-                            Login
-                        </Link>
-                        <Link to="/register" className="px-5 py-2 text-sm font-medium bg-banking-green text-white rounded-lg hover:bg-banking-light shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
-                            Open Account
+                        <Link to="/login" className="px-5 py-2 text-sm font-medium bg-banking-green text-white rounded-lg hover:bg-banking-light shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
+                            Sign In
                         </Link>
                     </div>
                 )}

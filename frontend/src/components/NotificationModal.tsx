@@ -1,29 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Mail, Smartphone } from 'lucide-react';
+import { X, Bell, Mail, Smartphone, CheckCircle } from 'lucide-react';
 
 interface NotificationModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+const STORAGE_KEY = 'banking_notification_prefs';
+
+const defaultPrefs = {
+    transactionAlerts: true,
+    lowBalance: true,
+    securityUpdates: true,
+    promotions: false,
+    weeklyReport: true,
+    emailNotifications: true,
+    smsNotifications: false,
+    pushNotifications: true,
+};
+
+const loadPrefs = () => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) return { ...defaultPrefs, ...JSON.parse(stored) };
+    } catch {}
+    return defaultPrefs;
+};
+
 export const NotificationModal = ({ isOpen, onClose }: NotificationModalProps) => {
-    const [notifications, setNotifications] = useState({
-        transactionAlerts: true,
-        lowBalance: true,
-        securityUpdates: true,
-        promotions: false,
-        weeklyReport: true,
-        emailNotifications: true,
-        smsNotifications: false,
-        pushNotifications: true,
-    });
+    const [notifications, setNotifications] = useState(defaultPrefs);
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setNotifications(loadPrefs());
+            setSaved(false);
+        }
+    }, [isOpen]);
 
     const handleToggle = (key: keyof typeof notifications) => {
         setNotifications(prev => ({
             ...prev,
             [key]: !prev[key]
         }));
+        setSaved(false);
+    };
+
+    const handleSave = () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+        setSaved(true);
+        setTimeout(() => onClose(), 1000);
     };
 
     const notificationOptions = [
@@ -131,12 +158,19 @@ export const NotificationModal = ({ isOpen, onClose }: NotificationModalProps) =
 
                         {/* Footer */}
                         <div className="flex gap-3 p-6 border-t border-white/10 bg-white/5">
-                            <button
-                                onClick={onClose}
-                                className="w-full px-4 py-2 bg-banking-light hover:bg-banking-green text-white rounded-lg transition-colors font-medium"
-                            >
-                                Save Preferences
-                            </button>
+                            {saved ? (
+                                <div className="w-full flex items-center justify-center gap-2 text-green-400 py-2">
+                                    <CheckCircle className="w-5 h-5" />
+                                    <span className="font-medium">Preferences saved!</span>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleSave}
+                                    className="w-full px-4 py-2 bg-banking-light hover:bg-banking-green text-white rounded-lg transition-colors font-medium"
+                                >
+                                    Save Preferences
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 </div>

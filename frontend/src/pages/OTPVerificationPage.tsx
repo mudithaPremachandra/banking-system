@@ -10,21 +10,22 @@ export const OTPVerificationPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email;
+    const userId = location.state?.userId;
 
     const [errorMsg, setErrorMsg] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // If user accesses this page directly without an email in state
-    if (!email) {
-        return <Navigate to="/register" replace />;
+    // If user accesses this page directly without login state
+    if (!email || !userId) {
+        return <Navigate to="/login" replace />;
     }
 
     const onSubmit = async (data: any) => {
         setIsSubmitting(true);
         setErrorMsg('');
         try {
-            await verifyOTP({ code: data.otp, email });
-            navigate('/login', { replace: true });
+            await verifyOTP({ userId, otpCode: data.otp });
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
             setErrorMsg(err.response?.data?.message || 'Invalid OTP code. Please try again.');
         } finally {

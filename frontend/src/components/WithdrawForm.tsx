@@ -5,9 +5,8 @@ import {
     AlertCircle, ChevronRight, ChevronLeft, Lock, Star
 } from 'lucide-react';
 import type { PaymentMethod, Transaction } from '../types';
-import { transactionService, savedAccounts } from '../services/transactionService';
+import { transactionService } from '../services/transactionService';
 import { accountService } from '../services/accountService';
-import { mockBalance } from '../services/accountService';
 import { WithdrawConfirmModal } from './WithdrawConfirmModal';
 import { WithdrawOTPModal } from './WithdrawOTPModal';
 import { WithdrawSuccessScreen } from './WithdrawSuccessScreen';
@@ -48,6 +47,9 @@ function buildDestination(method: PaymentMethod, details: Record<string, string>
         default: return method;
     }
 }
+
+// Saved accounts feature — placeholder for future backend integration
+const savedAccounts: { id: string; method: PaymentMethod; label: string; details: Record<string, string> }[] = [];
 
 export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) => {
     const { user } = useAuth();
@@ -129,12 +131,15 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
 
     const handleConfirm = async () => {
         setShowConfirm(false);
-        await accountService.sendWithdrawOTP(user?.email || 'user@example.com');
+        if (user?.id && user?.email) {
+            await accountService.sendOTP(user.id, user.email);
+        }
         setShowOTP(true);
     };
 
     const handleVerifyOTP = async (code: string): Promise<boolean> => {
-        const valid = await accountService.verifyWithdrawOTP(code);
+        if (!user?.id) return false;
+        const valid = await accountService.verifyOTP(user.id, code);
         if (valid) {
             setShowOTP(false);
             await processWithdrawal();
@@ -143,34 +148,28 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
     };
 
     const handleResendOTP = async () => {
-        await accountService.sendWithdrawOTP(user?.email || 'user@example.com');
+        if (user?.id && user?.email) {
+            await accountService.sendOTP(user.id, user.email);
+        }
     };
 
     const processWithdrawal = useCallback(async () => {
         setStep('processing');
-        const prevBal = mockBalance;
-        
-        const destLabel = buildDestination(selectedMethod!, paymentDetails);
-        const result = await transactionService.withdraw({
-            amount: numAmount,
-            fee,
-            method: selectedMethod!,
-            paymentLabel: destLabel,
-            destination: destLabel,
-        }) as { success: boolean; transaction: Transaction };
-        
-        if (saveAccount) {
-            // Filter out undefined values and savedLabel
-            const cleanDetails: Record<string, string> = Object.fromEntries(
-                Object.entries(paymentDetails).filter(([k, v]) => v !== undefined && k !== 'savedLabel')
-            ) as Record<string, string>;
-            transactionService.saveAccount(selectedMethod!, destLabel, cleanDetails);
+        try {
+            const balanceBefore = await accountService.getBalance();
+            const prevBal = balanceBefore.balance;
+
+            const destLabel = buildDestination(selectedMethod!, paymentDetails);
+            const result = await transactionService.withdraw(numAmount, `Withdrawal to ${destLabel}`);
+
+            onSuccess();
+            setSuccessData({ transaction: result.transaction, prevBalance: prevBal, newBalance: result.newBalance });
+            setStep('success');
+        } catch (err) {
+            console.error('Withdrawal failed', err);
+            setStep('amount');
         }
-        
-        onSuccess();
-        setSuccessData({ transaction: result.transaction, prevBalance: prevBal, newBalance: mockBalance });
-        setStep('success');
-    }, [numAmount, fee, selectedMethod, paymentDetails, saveAccount, onSuccess]);
+    }, [numAmount, selectedMethod, paymentDetails, onSuccess]);
 
     const handleReset = () => {
         setStep('method');

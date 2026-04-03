@@ -66,6 +66,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      notification-service:
+        condition: service_started
     networks:
       - banking-net
 
@@ -132,6 +134,7 @@ services:
       - ACCOUNT_SERVICE_URL=${ACCOUNT_SERVICE_URL:-http://account-service:3002}
       - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:3003}
       - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
       - PORT=3000
     depends_on:
       - auth-service
@@ -140,21 +143,7 @@ services:
     networks:
       - banking-net
 
-  # ---------------------------------------------------------------------------
-  # Frontend — React + Vite SPA
-  # OWNER: Muditha
-  # ---------------------------------------------------------------------------
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: banking-frontend
-    ports:
-      - "5173:80"
-    depends_on:
-      - gateway
-    networks:
-      - banking-net
+  # Frontend is run locally: cd frontend && npm install && npm run dev
 
 volumes:
   pgdata:

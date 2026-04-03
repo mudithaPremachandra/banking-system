@@ -221,3 +221,35 @@ export async function getCurrentUser(userId: string) {
 
   return user;
 }
+
+export async function updateProfile(userId: string, data: { fullName?: string; phone?: string }) {
+  if (!data.fullName && !data.phone) {
+    throw { statusCode: 400, message: "At least one field (fullName or phone) is required" };
+  }
+
+  const user = await authRepository.updateUser(userId, data);
+  return user;
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await authRepository.findUserByIdWithPassword(userId);
+
+  if (!user) {
+    throw { statusCode: 404, message: "User not found" };
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    throw { statusCode: 401, message: "Current password is incorrect" };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await authRepository.updatePassword(userId, passwordHash);
+
+  return { message: "Password changed successfully" };
+}
+
+export async function getActiveSessions(userId: string) {
+  const sessions = await authRepository.findActiveTokensByUserId(userId);
+  return sessions;
+}

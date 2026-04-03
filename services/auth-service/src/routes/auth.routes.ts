@@ -157,4 +157,50 @@ router.get(
   }
 );
 
+// PATCH /auth/profile (protected)
+router.patch(
+  "/profile",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const result = await authService.updateProfile(userId, req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /auth/change-password (protected)
+router.post(
+  "/change-password",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const { currentPassword, newPassword } = req.body;
+      const result = await authService.changePassword(userId, currentPassword, newPassword);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /auth/sessions (protected)
+router.get(
+  "/sessions",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const result = await authService.getActiveSessions(userId);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 export default router;

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, Smartphone, Clock, CheckCircle } from 'lucide-react';
+import { userService } from '../services/userService';
 
 interface SecurityModalProps {
     isOpen: boolean;
@@ -10,13 +11,25 @@ interface SecurityModalProps {
 export const SecurityModal = ({ isOpen, onClose }: SecurityModalProps) => {
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
     const [biometricEnabled, setBiometricEnabled] = useState(false);
-    const [lastLogin] = useState('Today at 2:30 PM');
-    const [loginAttempts] = useState(0);
+    const [sessions, setSessions] = useState<{ id: string; createdAt: string; expiresAt: string }[]>([]);
 
-    const secureSessions = [
-        { device: 'Chrome on Windows', lastActive: '2 minutes ago', location: 'New York, USA' },
-        { device: 'Safari on iPhone', lastActive: '1 hour ago', location: 'New York, USA' },
-    ];
+    useEffect(() => {
+        if (isOpen) {
+            userService.getSessions().then(setSessions).catch(() => {});
+        }
+    }, [isOpen]);
+
+    const formatSessionDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 1) return 'Just now';
+        if (diffMin < 60) return `${diffMin}m ago`;
+        const diffHours = Math.floor(diffMin / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        return date.toLocaleDateString();
+    };
 
     return (
         <AnimatePresence>
@@ -57,13 +70,15 @@ export const SecurityModal = ({ isOpen, onClose }: SecurityModalProps) => {
                         {/* Content */}
                         <div className="p-6 space-y-5 max-h-96 overflow-y-auto">
                             {/* Last Login */}
-                            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-white mb-2">
-                                    <Clock className="w-4 h-4 text-blue-400" />
-                                    Last Login
+                            {sessions.length > 0 && (
+                                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-white mb-2">
+                                        <Clock className="w-4 h-4 text-blue-400" />
+                                        Last Login
+                                    </div>
+                                    <p className="text-xs text-gray-300">{formatSessionDate(sessions[0].createdAt)}</p>
                                 </div>
-                                <p className="text-xs text-gray-300">{lastLogin}</p>
-                            </div>
+                            )}
 
                             {/* Two-Factor Authentication */}
                             <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
@@ -101,32 +116,33 @@ export const SecurityModal = ({ isOpen, onClose }: SecurityModalProps) => {
 
                             {/* Active Sessions */}
                             <div>
-                                <h4 className="text-sm font-semibold text-white mb-3">Active Sessions</h4>
+                                <h4 className="text-sm font-semibold text-white mb-3">Active Sessions ({sessions.length})</h4>
                                 <div className="space-y-2">
-                                    {secureSessions.map((session, idx) => (
-                                        <div key={idx} className="p-3 bg-white/5 rounded-lg border border-white/10">
+                                    {sessions.map((session) => (
+                                        <div key={session.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
                                             <div className="flex items-start justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-white">{session.device}</p>
-                                                    <p className="text-xs text-gray-400 mt-1">{session.lastActive} • {session.location}</p>
+                                                    <p className="text-sm font-medium text-white">Session</p>
+                                                    <p className="text-xs text-gray-400 mt-1">Started {formatSessionDate(session.createdAt)} • Expires {formatSessionDate(session.expiresAt)}</p>
                                                 </div>
                                                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                                             </div>
                                         </div>
                                     ))}
+                                    {sessions.length === 0 && (
+                                        <p className="text-xs text-gray-400">No active sessions found</p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Security Status */}
-                            {loginAttempts === 0 && (
-                                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-green-400" />
-                                    <div>
-                                        <p className="text-xs font-semibold text-green-400">SECURE</p>
-                                        <p className="text-xs text-green-300">No suspicious activity detected</p>
-                                    </div>
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-400" />
+                                <div>
+                                    <p className="text-xs font-semibold text-green-400">SECURE</p>
+                                    <p className="text-xs text-green-300">No suspicious activity detected</p>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Footer */}

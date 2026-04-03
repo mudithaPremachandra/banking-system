@@ -1,30 +1,24 @@
-// api removed
+import api from './api';
 import type { AuthResponse } from '../types';
 
 export const authService = {
-    login: async (credentials: any) => {
-        // Mock login
-        return new Promise<AuthResponse>((resolve) => {
-            setTimeout(() => resolve({
-                token: 'mock-jwt-token-12345',
-                user: { id: 'usr_1', email: credentials.email }
-            }), 800);
-        });
+    login: async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
+        const { data } = await api.post('/auth/login', credentials);
+        // Backend wraps in { success, data: { user, accessToken, refreshToken } }
+        return data.data || data;
     },
-    register: async (data: any) => {
-        // Mock register
-        return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 800));
+
+    verifyOTP: async (params: { userId: string; otpCode: string }): Promise<{ verified: boolean }> => {
+        const { data } = await api.post('/otp/verify', params);
+        return data;
     },
-    verifyOTP: async (data: { code: string; email?: string }) => {
-        // Mock OTP verification
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (data.code === '123456') {
-                    resolve({ success: true });
-                } else {
-                    reject({ response: { data: { message: 'Invalid OTP. Use 123456 for testing.' } } });
-                }
-            }, 800);
-        });
-    }
+
+    getMe: async () => {
+        const { data } = await api.get('/auth/me');
+        return data.data || data;
+    },
+
+    logout: async (refreshToken: string): Promise<void> => {
+        await api.post('/auth/logout', { refreshToken });
+    },
 };

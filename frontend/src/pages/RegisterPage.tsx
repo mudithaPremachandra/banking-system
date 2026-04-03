@@ -6,7 +6,7 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 
 export const RegisterPage = () => {
     const { register: registerForm, handleSubmit, formState: { errors }, watch } = useForm();
-    const { register } = useAuth();
+    const _auth = useAuth(); // register no longer available - page is unused
     const navigate = useNavigate();
     const [errorMsg, setErrorMsg] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +17,7 @@ export const RegisterPage = () => {
         setIsSubmitting(true);
         setErrorMsg('');
         try {
-            await register({ email: data.email, password: data.password });
+            throw new Error('Self-registration is not available');
             navigate('/otp-verification', { state: { email: data.email } });
         } catch (err: any) {
             setErrorMsg(err.response?.data?.message || 'Registration failed. Please try again.');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Eye, EyeOff } from 'lucide-react';
+import { userService } from '../services/userService';
 
 interface PasswordModalProps {
     isOpen: boolean;
@@ -14,6 +15,8 @@ export const PasswordModal = ({ isOpen, onClose }: PasswordModalProps) => {
     const [showPasswords, setShowPasswords] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
 
     const checkPasswordStrength = (pwd: string) => {
         let strength = 0;
@@ -33,18 +36,24 @@ export const PasswordModal = ({ isOpen, onClose }: PasswordModalProps) => {
 
     const handleSave = async () => {
         if (newPassword !== confirmPassword) {
-            alert('Passwords do not match');
+            setError('Passwords do not match');
             return;
         }
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            onClose();
+        setError('');
+        setSuccess(false);
+        try {
+            await userService.changePassword(currentPassword, newPassword);
+            setSuccess(true);
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        }, 1000);
+            setTimeout(() => onClose(), 1500);
+        } catch (err: any) {
+            setError(err.response?.data?.message || err.response?.data?.error?.message || 'Failed to change password');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
@@ -88,6 +97,16 @@ export const PasswordModal = ({ isOpen, onClose }: PasswordModalProps) => {
 
                         {/* Content */}
                         <div className="p-6 space-y-5 max-h-96 overflow-y-auto">
+                            {error && (
+                                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    {error}
+                                </div>
+                            )}
+                            {success && (
+                                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                                    Password changed successfully!
+                                </div>
+                            )}
                             {/* Current Password */}
                             <div>
                                 <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Current Password</label>

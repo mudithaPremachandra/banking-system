@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
@@ -15,10 +15,10 @@ export const LoginPage = () => {
         setIsSubmitting(true);
         setErrorMsg('');
         try {
-            await login(data);
-            navigate('/dashboard', { replace: true });
+            const { userId, email } = await login(data);
+            navigate('/otp-verification', { state: { email, userId }, replace: true });
         } catch (err: any) {
-            setErrorMsg(err.response?.data?.message || 'Login failed. Please check your credentials.');
+            setErrorMsg(err.response?.data?.message || err.response?.data?.error?.message || 'Login failed. Please check your credentials.');
         } finally {
             setIsSubmitting(false);
         }
@@ -122,13 +122,7 @@ export const LoginPage = () => {
 
                 {/* Footer */}
                 <p className="mt-5 text-center text-sm text-gray-400">
-                    Don't have an account?{' '}
-                    <Link
-                        to="/register"
-                        className="text-banking-green hover:text-banking-light font-medium transition-colors"
-                    >
-                        Register here
-                    </Link>
+                    Contact your bank administrator to create an account.
                 </p>
             </div>
         </div>

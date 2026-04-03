@@ -73,7 +73,7 @@ export const DashboardPage = () => {
                 setTrendData(data);
                 
                 // Calculate change from first to last day
-                const change = ((balance.balance - data[0]) / data[0]) * 100;
+                const change = data[0] !== 0 ? ((balance.balance - data[0]) / data[0]) * 100 : 0;
                 setBalanceChange(change);
             };
             generateTrendData();
@@ -83,11 +83,16 @@ export const DashboardPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [balanceData, txData] = await Promise.all([
+                const [balanceData, accountData, txData] = await Promise.all([
                     accountService.getBalance(),
+                    accountService.getAccount().catch(() => null),
                     transactionService.getRecent()
                 ]);
-                setBalance(balanceData);
+                setBalance({
+                    ...balanceData,
+                    accountNumber: accountData?.accountNumber,
+                    accountType: 'Savings',
+                });
                 setTransactions(txData);
                 setLastBalanceUpdate(new Date());
 
@@ -390,9 +395,8 @@ export const DashboardPage = () => {
                                 </button>
 
                                 <button
-                                    className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/30 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled
-                                    title="Transfer feature coming soon"
+                                    onClick={() => navigate('/transfer')}
+                                    className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/30 transition-all group"
                                 >
                                     <Send className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
                                     <span className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors">Transfer</span>

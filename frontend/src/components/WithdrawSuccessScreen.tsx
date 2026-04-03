@@ -60,7 +60,8 @@ export const WithdrawSuccessScreen = ({ transaction, previousBalance, newBalance
 
     const handleCancel = async () => {
         setIsCancelling(true);
-        const cancelled = await transactionService.cancelWithdrawal(transaction.id);
+        // TODO: integrate with backend when cancellation API is available
+        const cancelled = false;
         if (cancelled) setStatus('failed');
         setIsCancelling(false);
     };
