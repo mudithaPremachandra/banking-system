@@ -96,8 +96,10 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
         const link = document.createElement('a');
         link.href = url;
         link.download = `statement_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
         link.click();
-        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
     };
 
     // Export to PDF (text-based)
@@ -115,7 +117,7 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
             const typeLabel = tx.type === 'DEPOSIT' ? 'DEPOSIT' : 'WITHDRAWAL';
             const sign = tx.type === 'DEPOSIT' ? '+' : '-';
             const date = new Date(tx.date || tx.createdAt).toLocaleDateString();
-            content += `ID: ${tx.id}\nType: ${typeLabel}\nAmount: ${sign}Rs ${tx.amount.toFixed(2)}\nDate: ${date}\n\n`;
+            content += `ID: ${tx.id}\nType: ${typeLabel}\nAmount: ${sign}LKR ${Number(tx.amount).toFixed(2)}\nDate: ${date}\n\n`;
         });
 
         content += '='.repeat(80) + '\n';
@@ -126,8 +128,10 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
         const link = document.createElement('a');
         link.href = url;
         link.download = `statement_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(link);
         link.click();
-        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
     };
 
     return (
