@@ -1,6 +1,6 @@
 /**
  * Account Service — Transactions Unit Tests
- * OWNER: Kawindi (Testing)
+ * OWNER: Kavindya (Testing)
  *
  * INSTRUCTIONS FOR AI AGENT:
  * Write unit tests for deposit and withdrawal logic.
