@@ -26,9 +26,9 @@
  * - Call accountsService functions for business logic
  * - Handle auto-creation of account on first access
  */
-import { Router, Request, Response, NextFunction } from "express";
-import { requireAuth } from "../middleware/requireAuth";
-// import * as accountsService from "../services/accounts.service";
+import { Router, Response, NextFunction } from "express";
+import { requireAuth, AuthenticatedRequest } from "../middleware/requireAuth";
+import * as accountsService from "../services/accounts.service";
 
 const router = Router();
 
@@ -36,16 +36,18 @@ const router = Router();
 router.get(
   "/me",
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = (req as any).userId;
-      // TODO (Disaan): Call accountsService.getOrCreateAccount(userId)
-      // const account = await accountsService.getOrCreateAccount(userId);
-      // res.json({ account });
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Disaan — implement GET /accounts/me" },
-      });
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: { code: "AUTH_REQUIRED", message: "Authentication required" },
+        });
+        return;
+      }
+      const account = await accountsService.getOrCreateAccount(userId);
+      res.json({ account });
     } catch (err) {
       next(err);
     }
@@ -56,16 +58,18 @@ router.get(
 router.get(
   "/me/balance",
   requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = (req as any).userId;
-      // TODO (Disaan): Call accountsService.getBalance(userId)
-      // const { balance, currency } = await accountsService.getBalance(userId);
-      // res.json({ balance, currency });
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Disaan — implement GET /accounts/me/balance" },
-      });
+      if (!req.userId) {
+        res.status(401).json({
+          success: false,
+          error: { code: "AUTH_REQUIRED", message: "Authentication required" },
+        });
+        return;
+      }
+
+      const result = await accountsService.getBalance(req.userId);
+      res.json(result);
     } catch (err) {
       next(err);
     }

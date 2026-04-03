@@ -30,25 +30,30 @@
 import * as accountsRepository from "../repositories/accounts.repository";
 
 export async function getOrCreateAccount(userId: string) {
-  // TODO (Disaan): Implement
-  // let account = await accountsRepository.findByUserId(userId);
-  // if (!account) {
-  //   const accountNumber = generateAccountNumber();
-  //   account = await accountsRepository.create({ userId, accountNumber });
-  // }
-  // return account;
-  throw new Error("TODO: Disaan — implement getOrCreateAccount");
+  let account = await accountsRepository.findByUserId(userId);
+  if (account) return account;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      account = await accountsRepository.create({
+        userId,
+        accountNumber: generateAccountNumber(),
+      });
+      return account;
+    } catch (error: any) {
+      if (error?.code !== "P2002") throw error;
+    }
+  }
+
+  throw new Error("Failed to generate unique account number");
 }
 
 export async function getBalance(userId: string) {
-  // TODO (Disaan): Implement
-  // const account = await getOrCreateAccount(userId);
-  // return { balance: Number(account.balance), currency: account.currency };
-  throw new Error("TODO: Disaan — implement getBalance");
+  const account = await getOrCreateAccount(userId);
+  return { balance: Number(account.balance), currency: account.currency };
 }
 
 function generateAccountNumber(): string {
-  // Generate "ACC" + 10 random digits
   const digits = Math.floor(Math.random() * 10_000_000_000)
     .toString()
     .padStart(10, "0");
