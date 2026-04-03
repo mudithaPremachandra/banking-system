@@ -1,6 +1,6 @@
 /**
  * Auth Service — Unit Tests
- * OWNER: Kawindi (Testing)
+ * OWNER: Kavindya (Testing)
  *
  * INSTRUCTIONS FOR AI AGENT:
  * Write unit tests for the auth service business logic.
