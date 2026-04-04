@@ -44,7 +44,9 @@ import { Router, Request, Response, NextFunction } from "express";
 import axios from "axios";
 import { config } from "../config";
 import { validate } from "../middleware/zodValidation";
-import { depositSchema, withdrawSchema } from "../schemas";
+import { depositSchema, withdrawSchema, transferSchema } from "../schemas";
+import { jwtVerifyMiddleware } from "../middleware/jwtVerify";
+
 
 const router = Router();
 const ACCOUNT_URL = config.accountServiceUrl;
@@ -53,20 +55,23 @@ const ACCOUNT_URL = config.accountServiceUrl;
 // router.use(jwtVerifyMiddleware);
 
 // GET /api/accounts/me
+
+// Apply to ALL routes
+router.use(jwtVerifyMiddleware);
 router.get(
   "/me",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // TODO (Sanjaya): Proxy to Account Service
-      // const userId = (req as any).userId; // from JWT middleware
-      // const response = await axios.get(`${ACCOUNT_URL}/accounts/me`, {
-      //   headers: { "x-user-id": userId },
-      // });
-      // res.json(response.data);
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      //TODO (Sanjaya): Proxy to Account Service
+        const userId = (req as any).userId; // from JWT middleware
+        const response = await axios.get(`${ACCOUNT_URL}/accounts/me`, {
+        headers: { "x-user-id": userId },
       });
+      res.json(response.data);
+      // res.status(501).json({
+      //   success: false,
+      //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      // });
     } catch (err) {
       next(err);
     }
@@ -79,10 +84,18 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // TODO (Sanjaya): Proxy to Account Service
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
-      });
+      const userId = (req as any).userId;
+      const response = await axios.get(
+        `${ACCOUNT_URL}/accounts/me/balance`,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+      res.json(response.data);
+      //res.status(501).json({
+      //  success: false,
+      //  error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      //});
     } catch (err) {
       next(err);
     }
@@ -96,10 +109,20 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // TODO (Sanjaya): Proxy to Account Service
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
-      });
+        const userId = (req as any).userId;
+
+      const response = await axios.post(
+      `${ACCOUNT_URL}/accounts/me/deposit`,
+      req.body,
+      {
+        headers: { "x-user-id": userId },
+      }
+    );
+    res.json(response.data);
+      // res.status(501).json({
+      //   success: false,
+      //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      // });
     } catch (err) {
       next(err);
     }
@@ -113,10 +136,42 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // TODO (Sanjaya): Proxy to Account Service
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
-      });
+      const userId = (req as any).userId;
+
+      const response = await axios.post(
+        `${ACCOUNT_URL}/accounts/me/withdraw`,
+        req.body,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+
+    res.json(response.data);
+      // res.status(501).json({
+      //   success: false,
+      //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      // });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/accounts/me/transfer
+router.post(
+  "/me/transfer",
+  validate(transferSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = (req as any).userId;
+      const response = await axios.post(
+        `${ACCOUNT_URL}/accounts/me/transfer`,
+        req.body,
+        {
+          headers: { "x-user-id": userId },
+        }
+      );
+      res.json(response.data);
     } catch (err) {
       next(err);
     }
@@ -130,10 +185,22 @@ router.get(
     try {
       // TODO (Sanjaya): Proxy to Account Service with query params
       // const { page, limit } = req.query;
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
-      });
+      const userId = (req as any).userId;
+      const { page, limit } = req.query;
+
+      const response = await axios.get(
+        `${ACCOUNT_URL}/accounts/me/transactions`,
+        {
+          headers: { "x-user-id": userId },
+          params: { page, limit },
+        }
+      );
+
+    res.json(response.data);
+      // res.status(501).json({
+      //   success: false,
+      //   error: { code: "NOT_IMPLEMENTED", message: "TODO: Sanjaya — proxy to Account Service" },
+      // });
     } catch (err) {
       next(err);
     }

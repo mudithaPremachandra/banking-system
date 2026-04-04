@@ -51,18 +51,19 @@ app.get("/health", (_req, res) => {
 app.use("/auth", authRoutes);
 
 // --- Error Handler ---
-// TODO (Sandun): Add global error handling middleware
 app.use(
   (
-    err: Error,
+    err: any,
     _req: express.Request,
     res: express.Response,
     _next: express.NextFunction
   ) => {
-    console.error("[Auth Service Error]", err.message);
-    res.status(500).json({
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "An unexpected error occurred";
+    console.error("[Auth Service Error]", statusCode, message);
+    res.status(statusCode).json({
       success: false,
-      error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred" },
+      error: { code: statusCode === 500 ? "INTERNAL_ERROR" : "AUTH_ERROR", message },
     });
   }
 );

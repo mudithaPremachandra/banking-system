@@ -41,50 +41,138 @@
  */
 import { prisma } from "../lib/prisma";
 
+/**
+ * Find user by email
+ */
 export async function findUserByEmail(email: string) {
-  // TODO (Sandun): Implement
-  // return prisma.user.findUnique({ where: { email } });
-  throw new Error("TODO: Sandun — implement findUserByEmail");
+  return prisma.user.findUnique({
+    where: { email },
+  });
 }
 
+/**
+ * Find user by ID (exclude passwordHash)
+ */
 export async function findUserById(id: string) {
-  // TODO (Sandun): Implement — exclude passwordHash from response
-  // return prisma.user.findUnique({
-  //   where: { id },
-  //   select: { id: true, email: true, fullName: true, phone: true, createdAt: true },
-  // });
-  throw new Error("TODO: Sandun — implement findUserById");
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      phone: true,
+      createdAt: true,
+    },
+  });
 }
 
+/**
+ * Create new user
+ */
 export async function createUser(data: {
   email: string;
   passwordHash: string;
   fullName: string;
   phone?: string;
 }) {
-  // TODO (Sandun): Implement
-  // return prisma.user.create({ data });
-  throw new Error("TODO: Sandun — implement createUser");
+  return prisma.user.create({
+    data,
+  });
 }
 
+/**
+ * Store refresh token
+ */
 export async function createToken(data: {
   userId: string;
   refreshToken: string;
   expiresAt: Date;
 }) {
-  // TODO (Sandun): Implement
-  // return prisma.token.create({ data });
-  throw new Error("TODO: Sandun — implement createToken");
+  return prisma.token.create({
+    data,
+  });
 }
 
+/**
+ * Find token by refresh token
+ */
 export async function findTokenByRefreshToken(refreshToken: string) {
-  // TODO (Sandun): Implement
-  // return prisma.token.findUnique({ where: { refreshToken } });
-  throw new Error("TODO: Sandun — implement findTokenByRefreshToken");
+  return prisma.token.findUnique({
+    where: { refreshToken },
+  });
 }
 
+/**
+ * Revoke a single token
+ */
 export async function revokeToken(id: string) {
-  // TODO (Sandun): Implement
-  // return prisma.token.update({ where: { id }, data: { revoked: true } });
-  throw new Error("TODO: Sandun — implement revokeToken");
+  return prisma.token.update({
+    where: { id },
+    data: { revoked: true },
+  });
+}
+
+/**
+ * Revoke all tokens of a user (logout from all devices)
+ */
+export async function revokeAllUserTokens(userId: string) {
+  return prisma.token.updateMany({
+    where: { userId },
+    data: { revoked: true },
+  });
+}
+
+/**
+ * Update user profile fields
+ */
+export async function updateUser(userId: string, data: { fullName?: string; phone?: string }) {
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      phone: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * Find user by ID (include passwordHash for password verification)
+ */
+export async function findUserByIdWithPassword(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+  });
+}
+
+/**
+ * Update user password
+ */
+export async function updatePassword(userId: string, passwordHash: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
+}
+
+/**
+ * Find active (non-revoked, non-expired) tokens for a user
+ */
+export async function findActiveTokensByUserId(userId: string) {
+  return prisma.token.findMany({
+    where: {
+      userId,
+      revoked: false,
+      expiresAt: { gt: new Date() },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      expiresAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }

@@ -57,6 +57,26 @@ export const withdrawSchema = z.object({
   description: z.string().optional(),
 });
 
+export const transferSchema = z.object({
+  toAccountNumber: z.string().min(1, "Recipient account number is required"),
+  amount: z.number().positive("Amount must be positive"),
+  description: z.string().optional(),
+});
+
+// --- Profile / Password Schemas ---
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(1, "Full name cannot be empty").optional(),
+  phone: z.string().optional(),
+}).refine((data) => data.fullName || data.phone, {
+  message: "At least one field (fullName or phone) is required",
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters"),
+});
+
 // --- Query Schemas ---
 
 export const paginationSchema = z.object({

@@ -26,6 +26,47 @@ cd services/<service> && npx prisma generate         # Regenerate Prisma client
 cd services/<service> && npx prisma studio           # Open Prisma GUI
 ```
 
+### Viewing the Database (Prisma Studio)
+
+Prisma Studio gives you a web UI to browse and edit database tables. Docker services must be running first (`docker-compose up`).
+
+Open **three separate terminals** and run one command in each:
+
+```bash
+# Terminal 1 — Auth DB (Users, Tokens)
+cd services/auth-service
+npx prisma studio --url postgresql://postgres:postgres@localhost:5432/auth_db
+
+# Terminal 2 — Account DB (Accounts, Transactions)
+cd services/account-service
+npx prisma studio --url postgresql://postgres:postgres@localhost:5432/account_db
+
+# Terminal 3 — Notification DB (OTP records)
+cd services/notification-service
+npx prisma studio --url postgresql://postgres:postgres@localhost:5432/notification_db
+```
+
+Each opens a browser tab (default ports: 5555, 5556, 5557). If port 5555 is taken, Prisma auto-picks the next available port.
+
+**Alternative — raw SQL via Docker:**
+```bash
+docker exec -it banking-system-postgres-1 psql -U postgres -d auth_db
+docker exec -it banking-system-postgres-1 psql -U postgres -d account_db
+docker exec -it banking-system-postgres-1 psql -U postgres -d notification_db
+```
+
+Useful queries:
+```sql
+-- See all users
+SELECT id, email, "fullName" FROM "User";
+
+-- See all accounts with balances
+SELECT "accountNumber", "userId", balance FROM "Account";
+
+-- See recent transactions
+SELECT id, type, amount, description, "createdAt" FROM "Transaction" ORDER BY "createdAt" DESC LIMIT 10;
+```
+
 ### Tests
 ```bash
 cd <service-dir> && npm test                         # Run all tests

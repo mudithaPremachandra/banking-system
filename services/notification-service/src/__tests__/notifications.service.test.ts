@@ -1,46 +1,164 @@
-/**
- * Notification Service — Unit Tests
- * OWNER: Kawindi (Testing)
- *
- * INSTRUCTIONS FOR AI AGENT:
- * Write unit tests for OTP generation and verification logic.
- * Mock the repository (Prisma) and email service using jest.mock().
- *
- * TEST CASES TO IMPLEMENT:
- *
- * sendOTP()
- *   ✓ generates a 6-digit OTP code
- *   ✓ hashes the OTP before storing (never stores plain OTP)
- *   ✓ stores OTP with 5-minute expiry
- *   ✓ calls emailService.sendOTPEmail with the PLAIN otp (not hash)
- *   ✓ invalidates previous unused OTPs for the same user before creating new one
- *   ✓ returns an otpId
- *
- * verifyOTP()
- *   ✓ returns { valid: true } for correct OTP code
- *   ✓ returns { valid: false } for wrong OTP code
- *   ✓ returns { valid: false, expired: true } for expired OTP (expiresAt in past)
- *   ✓ returns { valid: false } when no OTP record exists for user
- *   ✓ marks OTP as used after successful verification
- *   ✓ does NOT allow same OTP to be used twice (already marked used)
- *
- * TODO (Kawindi): Implement all test cases
- * Coordinate with Geethika as she finishes notifications.service.ts
- */
+import * as notificationsService from "../services/notifications.service";
+import * as notificationsRepository from "../repositories/notifications.repository";
+import * as emailService from "../services/email.service";
+import bcrypt from "bcryptjs";
+
+jest.mock("../repositories/notifications.repository");
+jest.mock("../services/email.service");
+
+const mockedRepository = notificationsRepository as jest.Mocked<
+  typeof notificationsRepository
+>;
+const mockedEmailService = emailService as jest.Mocked<typeof emailService>;
+
 describe("notifications.service — sendOTP", () => {
-  it.todo("generates a 6-digit numeric OTP");
-  it.todo("stores a bcrypt hash, not the plain OTP");
-  it.todo("stores OTP with 5-minute expiry from now");
-  it.todo("calls emailService.sendOTPEmail with plain OTP");
-  it.todo("invalidates previous unused OTPs for same user");
-  it.todo("returns an otpId");
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockedRepository.invalidateExistingOTPs.mockResolvedValue({ count: 1 });
+    mockedRepository.createOTP.mockResolvedValue({
+      id: "otp-1",
+      userId: "user-1",
+      email: "user@test.com",
+      otpHash: "hashed-otp",
+      used: false,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+    mockedEmailService.sendOTPEmail.mockResolvedValue();
+  });
+
+  it("generates a 6-digit OTP, stores hash, and returns otpId", async () => {
+    const result = await notificationsService.sendOTP("user-1", "user@test.com");
+
+    expect(mockedRepository.createOTP).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        email: "user@test.com",
+        otpHash: expect.any(String),
+        expiresAt: expect.any(Date),
+      })
+    );
+    expect(mockedEmailService.sendOTPEmail).toHaveBeenCalledWith(
+      "user@test.com",
+      expect.any(String)
+    );
+    expect(result).toEqual({ otpId: "otp-1" });
+  });
+
+  it("stores OTP with roughly 5-minute expiry", async () => {
+    const start = Date.now();
+
+    await notificationsService.sendOTP("user-1", "user@test.com");
+
+    const createArg = mockedRepository.createOTP.mock.calls[0][0];
+    const expiryDeltaMs = createArg.expiresAt.getTime() - start;
+    expect(expiryDeltaMs).toBeGreaterThanOrEqual(5 * 60 * 1000 - 1500);
+    expect(expiryDeltaMs).toBeLessThanOrEqual(5 * 60 * 1000 + 1500);
+  });
+
+  it("invalidates previous OTPs before creating a new OTP", async () => {
+    await notificationsService.sendOTP("user-1", "user@test.com");
+
+    expect(mockedRepository.invalidateExistingOTPs).toHaveBeenCalledWith("user-1");
+    expect(mockedRepository.invalidateExistingOTPs.mock.invocationCallOrder[0]).toBeLessThan(
+      mockedRepository.createOTP.mock.invocationCallOrder[0]
+    );
+  });
 });
 
 describe("notifications.service — verifyOTP", () => {
-  it.todo("returns valid: true for correct OTP code");
-  it.todo("returns valid: false for wrong OTP code");
-  it.todo("returns expired: true for expired OTP");
-  it.todo("returns valid: false when no OTP record exists");
-  it.todo("marks OTP as used after successful verification");
-  it.todo("rejects already-used OTP (prevents replay)");
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns valid: false when no OTP record exists", async () => {
+    mockedRepository.findLatestUnusedOTP.mockResolvedValue(null);
+
+    const result = await notificationsService.verifyOTP("user-1", "123456");
+
+    expect(result).toEqual({
+      valid: false,
+      expired: false,
+    });
+    expect(mockedRepository.markAsUsed).not.toHaveBeenCalled();
+  });
+
+  it("returns expired: true for expired OTP", async () => {
+    mockedRepository.findLatestUnusedOTP.mockResolvedValue({
+      id: "otp-1",
+      userId: "user-1",
+      email: "user@test.com",
+      otpHash: "hashed-otp",
+      used: false,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() - 1000),
+    });
+
+    const result = await notificationsService.verifyOTP("user-1", "123456");
+
+    expect(result).toEqual({
+      valid: false,
+      expired: true,
+    });
+    expect(mockedRepository.markAsUsed).not.toHaveBeenCalled();
+  });
+
+  it("returns valid: false for wrong OTP code", async () => {
+    mockedRepository.findLatestUnusedOTP.mockResolvedValue({
+      id: "otp-1",
+      userId: "user-1",
+      email: "user@test.com",
+      otpHash: "hashed-otp",
+      used: false,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    const result = await notificationsService.verifyOTP("user-1", "wrong-code");
+
+    expect(result).toEqual({
+      valid: false,
+      expired: false,
+    });
+    expect(mockedRepository.markAsUsed).not.toHaveBeenCalled();
+  });
+
+  it("returns valid: true and marks OTP as used for correct OTP code", async () => {
+    const testOtp = "123456";
+    const hash = await bcrypt.hash(testOtp, 10);
+
+    const mockOTP = {
+      id: "otp-1",
+      userId: "user-1",
+      email: "user@test.com",
+      otpHash: hash,
+      used: false,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    };
+    mockedRepository.findLatestUnusedOTP.mockResolvedValue(mockOTP);
+    mockedRepository.markAsUsed.mockResolvedValue({
+      ...mockOTP,
+      used: true,
+    });
+
+    const result = await notificationsService.verifyOTP("user-1", testOtp);
+
+    expect(result).toEqual({
+      valid: true,
+      expired: false,
+    });
+    expect(mockedRepository.markAsUsed).toHaveBeenCalledWith("otp-1");
+  });
+
+  it("rejects replay when OTP is already used", async () => {
+    mockedRepository.findLatestUnusedOTP.mockResolvedValue(null);
+
+    const result = await notificationsService.verifyOTP("user-1", "123456");
+
+    expect(result).toEqual({
+      valid: false,
+      expired: false,
+    });
+  });
 });

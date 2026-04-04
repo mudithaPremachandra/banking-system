@@ -43,19 +43,37 @@
  * - Use try/catch and pass errors to next() for the error handler
  */
 import { Router, Request, Response, NextFunction } from "express";
-// import * as authService from "../services/auth.service";
-// import { requireAuth } from "../middleware/requireAuth";
+import * as authService from "../services/auth.service";
+import { requireAuth, AuthRequest } from "../middleware/requireAuth";
 
 const router = Router();
+
+// POST /auth/register
+router.post("/register", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, fullName, phone } = req.body;
+
+    const result = await authService.register({ email, password, fullName, phone });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /auth/login
 router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO (Sandun): Call authService.login(req.body)
-    // This should also trigger OTP via Notification Service
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement login" },
+    const { email, password } = req.body;
+
+    const result = await authService.login({ email, password });
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (err) {
     next(err);
@@ -65,10 +83,13 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
 // POST /auth/refresh
 router.post("/refresh", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO (Sandun): Call authService.refreshToken(req.body.refreshToken)
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement refresh" },
+    const { refreshToken } = req.body;
+
+    const result = await authService.refreshToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (err) {
     next(err);
@@ -78,10 +99,13 @@ router.post("/refresh", async (req: Request, res: Response, next: NextFunction) 
 // POST /auth/logout
 router.post("/logout", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO (Sandun): Call authService.logout(req.body.refreshToken)
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement logout" },
+    const { refreshToken } = req.body;
+
+    await authService.logout(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
     });
   } catch (err) {
     next(err);
@@ -91,11 +115,22 @@ router.post("/logout", async (req: Request, res: Response, next: NextFunction) =
 // GET /auth/verify-token
 router.get("/verify-token", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO (Sandun): Extract JWT from Authorization header, verify it
-    // Return { valid: true, userId } or 401
-    res.status(501).json({
-      success: false,
-      error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement verify-token" },
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        error: { code: "AUTH_REQUIRED", message: "No token provided" },
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = await authService.verifyToken(token);
+
+    res.status(200).json({
+      valid: true,
+      userId: decoded.userId,
     });
   } catch (err) {
     next(err);
@@ -105,14 +140,63 @@ router.get("/verify-token", async (req: Request, res: Response, next: NextFuncti
 // GET /auth/me (protected)
 router.get(
   "/me",
-  // requireAuth, // TODO (Sandun): Uncomment after implementing requireAuth
-  async (req: Request, res: Response, next: NextFunction) => {
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      // TODO (Sandun): Return user data from req.userId (set by requireAuth)
-      res.status(501).json({
-        success: false,
-        error: { code: "NOT_IMPLEMENTED", message: "TODO: Sandun — implement /me" },
+      const userId = req.userId!;
+
+      const user = await authService.getCurrentUser(userId);
+
+      res.status(200).json({
+        success: true,
+        data: user,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /auth/profile (protected)
+router.patch(
+  "/profile",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const result = await authService.updateProfile(userId, req.body);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /auth/change-password (protected)
+router.post(
+  "/change-password",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const { currentPassword, newPassword } = req.body;
+      const result = await authService.changePassword(userId, currentPassword, newPassword);
+      res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /auth/sessions (protected)
+router.get(
+  "/sessions",
+  requireAuth,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const result = await authService.getActiveSessions(userId);
+      res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);
     }

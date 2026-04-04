@@ -53,33 +53,203 @@ import * as notificationClient from "./notification.client";
 
 const SALT_ROUNDS = 10;
 
-export async function login(data: { email: string; password: string }) {
-  // TODO (Sandun): Implement login logic
-  // Step 1: Find user by email
-  // Step 2: Compare password
-  // Step 3: Generate tokens
-  // Step 4: Store refresh token
-  // Step 5: Call notification service to send OTP
-  // Step 6: Return response
-  throw new Error("TODO: Sandun — implement login");
+export async function register(data: {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}) {
+  const { email, password, fullName, phone } = data;
+
+  const existingUser = await authRepository.findUserByEmail(email);
+  if (existingUser) {
+    throw { statusCode: 409, message: "Email is already in use" };
+  }
+
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+  const user = await authRepository.createUser({
+    email,
+    passwordHash,
+    fullName,
+    phone,
+  });
+
+  const accessToken = tokenService.generateAccessToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  const refreshToken = tokenService.generateRefreshToken({
+    userId: user.id,
+  });
+
+  await authRepository.createToken({
+    userId: user.id,
+    refreshToken,
+    expiresAt: tokenService.getRefreshTokenExpiry(),
+  });
+
+  await notificationClient.sendOTP({
+    userId: user.id,
+    email: user.email,
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+    },
+    accessToken,
+    refreshToken,
+  };
 }
 
-export async function refreshAccessToken(refreshTokenValue: string) {
-  // TODO (Sandun): Implement token refresh logic
-  // Step 1: Find token record
-  // Step 2: Check revoked/expired
-  // Step 3: Verify JWT signature
-  // Step 4: Rotate tokens
-  // Step 5: Return new tokens
-  throw new Error("TODO: Sandun — implement refreshToken");
+export async function login(data: { email: string; password: string }) {
+  const { email, password } = data;
+
+  const user = await authRepository.findUserByEmail(email);
+  if (!user) {
+    throw { statusCode: 404, message: "User not found" };
+  }
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) {
+    throw { statusCode: 401, message: "Invalid credentials" };
+  }
+
+  const accessToken = tokenService.generateAccessToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  const refreshToken = tokenService.generateRefreshToken({
+    userId: user.id,
+  });
+
+  await authRepository.createToken({
+    userId: user.id,
+    refreshToken,
+    expiresAt: tokenService.getRefreshTokenExpiry(),
+  });
+
+  await notificationClient.sendOTP({
+    userId: user.id,
+    email: user.email,
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+    },
+    accessToken,
+    refreshToken,
+  };
+}
+
+export async function refreshToken(refreshTokenValue: string) {
+  const tokenRecord = await authRepository.findTokenByRefreshToken(refreshTokenValue);
+
+  if (!tokenRecord) {
+    throw { statusCode: 401, message: "Invalid refresh token" };
+  }
+
+  if (tokenRecord.revoked) {
+    throw { statusCode: 401, message: "Token revoked" };
+  }
+
+  if (new Date() > tokenRecord.expiresAt) {
+    throw { statusCode: 401, message: "Token expired" };
+  }
+
+  const decoded = tokenService.verifyRefreshToken(refreshTokenValue);
+  const user = await authRepository.findUserById(decoded.userId);
+  if (!user) {
+    throw { statusCode: 401, message: "Invalid refresh token" };
+  }
+
+  await authRepository.revokeToken(tokenRecord.id);
+
+  const accessToken = tokenService.generateAccessToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  const newRefreshToken = tokenService.generateRefreshToken({
+    userId: user.id,
+  });
+
+  await authRepository.createToken({
+    userId: user.id,
+    refreshToken: newRefreshToken,
+    expiresAt: tokenService.getRefreshTokenExpiry(),
+  });
+
+  return {
+    accessToken,
+    refreshToken: newRefreshToken,
+  };
 }
 
 export async function logout(refreshTokenValue: string) {
-  // TODO (Sandun): Revoke the refresh token
-  throw new Error("TODO: Sandun — implement logout");
+  const tokenRecord = await authRepository.findTokenByRefreshToken(refreshTokenValue);
+
+  if (!tokenRecord) {
+    throw { statusCode: 401, message: "Invalid token" };
+  }
+
+  await authRepository.revokeToken(tokenRecord.id);
+
+  return { message: "Logged out successfully" };
 }
 
-export async function getUserById(userId: string) {
-  // TODO (Sandun): Fetch user and return without passwordHash
-  throw new Error("TODO: Sandun — implement getUserById");
+export async function verifyToken(token: string): Promise<tokenService.AccessTokenPayload> {
+  return tokenService.verifyAccessToken(token);
+}
+
+export async function getCurrentUser(userId: string) {
+  const user = await authRepository.findUserById(userId);
+
+  if (!user) {
+    throw { statusCode: 404, message: "User not found" };
+  }
+
+  return user;
+}
+
+export async function updateProfile(userId: string, data: { fullName?: string; phone?: string }) {
+  if (!data.fullName && !data.phone) {
+    throw { statusCode: 400, message: "At least one field (fullName or phone) is required" };
+  }
+
+  const user = await authRepository.updateUser(userId, data);
+  return user;
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  const user = await authRepository.findUserByIdWithPassword(userId);
+
+  if (!user) {
+    throw { statusCode: 404, message: "User not found" };
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isMatch) {
+    throw { statusCode: 401, message: "Current password is incorrect" };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await authRepository.updatePassword(userId, passwordHash);
+
+  return { message: "Password changed successfully" };
+}
+
+export async function getActiveSessions(userId: string) {
+  const sessions = await authRepository.findActiveTokensByUserId(userId);
+  return sessions;
 }

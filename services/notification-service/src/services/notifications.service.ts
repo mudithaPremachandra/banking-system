@@ -48,56 +48,44 @@ const SALT_ROUNDS = 10;
 const OTP_EXPIRY_MINUTES = 5;
 
 export async function sendOTP(userId: string, email: string) {
-  // TODO (Geethika): Implement OTP generation and sending
-  //
-  // Step 1: Invalidate existing OTPs for this user
-  // await notificationsRepository.invalidateExistingOTPs(userId);
-  //
-  // Step 2: Generate 6-digit OTP
-  // const otp = crypto.randomInt(100000, 999999).toString();
-  //
-  // Step 3: Hash the OTP
-  // const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
-  //
-  // Step 4: Calculate expiry
-  // const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-  //
-  // Step 5: Store in DB
-  // const record = await notificationsRepository.createOTP({
-  //   userId, email, otpHash, expiresAt,
-  // });
-  //
-  // Step 6: Send email (don't await — fire and forget, or await with try/catch)
-  // try {
-  //   await emailService.sendOTPEmail(email, otp);
-  // } catch (err) {
-  //   console.error("Failed to send OTP email:", err);
-  //   // Still return success — OTP is stored, user can request resend
-  // }
-  //
-  // return { otpId: record.id };
+  await notificationsRepository.invalidateExistingOTPs(userId);
 
-  throw new Error("TODO: Geethika — implement sendOTP");
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+  const record = await notificationsRepository.createOTP({
+    userId,
+    email,
+    otpHash,
+    expiresAt,
+  });
+
+  try {
+    await emailService.sendOTPEmail(email, otp);
+  } catch (err) {
+    console.error("[Notification Service] Failed to send OTP email:", err);
+  }
+
+  return { otpId: record.id };
 }
 
 export async function verifyOTP(userId: string, otpCode: string) {
-  // TODO (Geethika): Implement OTP verification
-  //
-  // Step 1: Find latest unused OTP
-  // const otpRecord = await notificationsRepository.findLatestUnusedOTP(userId);
-  // if (!otpRecord) return { valid: false, expired: false };
-  //
-  // Step 2: Check expiry
-  // if (new Date() > otpRecord.expiresAt) return { valid: false, expired: true };
-  //
-  // Step 3: Compare hash
-  // const isValid = await bcrypt.compare(otpCode, otpRecord.otpHash);
-  // if (!isValid) return { valid: false, expired: false };
-  //
-  // Step 4: Mark as used
-  // await notificationsRepository.markAsUsed(otpRecord.id);
-  //
-  // return { valid: true, expired: false };
+  const otpRecord = await notificationsRepository.findLatestUnusedOTP(userId);
+  if (!otpRecord) {
+    return { valid: false, expired: false };
+  }
 
-  throw new Error("TODO: Geethika — implement verifyOTP");
+  if (new Date() > otpRecord.expiresAt) {
+    return { valid: false, expired: true };
+  }
+
+  const isValid = await bcrypt.compare(otpCode, otpRecord.otpHash);
+  if (!isValid) {
+    return { valid: false, expired: false };
+  }
+
+  await notificationsRepository.markAsUsed(otpRecord.id);
+
+  return { valid: true, expired: false };
 }
