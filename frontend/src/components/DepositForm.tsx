@@ -422,7 +422,7 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                                     ? 'border-banking-green/60 bg-banking-green/10 text-banking-green'
                                                     : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/25 hover:text-white'}`}
                                         >
-                                            +${q}
+                                            +Rs {q}
                                         </button>
                                     ))}
                                     <button
@@ -448,7 +448,7 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                         placeholder="0.00"
                                         value={amount}
                                         onChange={e => { setAmount(e.target.value); setAmountError(''); }}
-                                        className={`w-full bg-white/5 border rounded-xl py-4 pl-8 pr-4 text-white text-xl font-medium placeholder-gray-600 outline-none focus:bg-white/8 transition-all
+                                        className={`w-full bg-white/5 border rounded-xl py-4 pl-12 pr-4 text-white text-xl font-medium placeholder-gray-600 outline-none focus:bg-white/8 transition-all
                                             ${amountError ? 'border-red-500/60' : 'border-white/10 focus:border-banking-green/50'}`}
                                     />
                                 </div>
@@ -456,7 +456,7 @@ export const DepositForm = ({ onSuccess }: DepositFormProps) => {
                                     {amountError ? (
                                         <p className="text-red-400 text-xs flex items-center gap-1"><AlertCircle className="w-3 h-3" />{amountError}</p>
                                     ) : (
-                                        <p className="text-xs text-gray-500">Min: ${MIN_AMOUNT} | Max: ${MAX_AMOUNT.toLocaleString()}</p>
+                                        <p className="text-xs text-gray-500">Min: Rs {MIN_AMOUNT} | Max: Rs {MAX_AMOUNT.toLocaleString()}</p>
                                     )}
                                 </div>
                             </div>

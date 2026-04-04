@@ -60,25 +60,56 @@ export const DashboardPage = () => {
         }
     }, []);
 
-    // Generate balance trend data
+    // Compute balance trend from real transactions
     useEffect(() => {
-        if (balance) {
-            const generateTrendData = () => {
-                const data = [];
-                for (let i = 0; i < 7; i++) {
-                    const variation = Math.random() * 5000 - 2500; // ±$2500
-                    data.push(Math.max(balance.balance - 10000 + variation, balance.balance * 0.7));
+        if (balance && transactions.length > 0) {
+            // Reconstruct daily balances for the last 7 days using transactions
+            const now = new Date();
+            const days = 7;
+            const dailyBalances: number[] = new Array(days).fill(balance.balance);
+
+            // Work backwards from current balance using transactions
+            let runningBalance = balance.balance;
+            const sortedTxs = [...transactions].sort(
+                (a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+            );
+
+            for (let day = days - 1; day >= 0; day--) {
+                const dayStart = new Date(now);
+                dayStart.setDate(now.getDate() - (days - 1 - day));
+                dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(dayStart);
+                dayEnd.setHours(23, 59, 59, 999);
+
+                dailyBalances[day] = runningBalance;
+
+                // Subtract this day's net change to get previous day's closing balance
+                const dayTxs = sortedTxs.filter(tx => {
+                    const txDate = new Date(tx.date || tx.createdAt);
+                    return txDate >= dayStart && txDate <= dayEnd;
+                });
+
+                for (const tx of dayTxs) {
+                    if (tx.type === 'DEPOSIT') {
+                        runningBalance -= tx.amount;
+                    } else {
+                        runningBalance += tx.amount;
+                    }
                 }
-                data[6] = balance.balance; // Last day is current balance
-                setTrendData(data);
-                
-                // Calculate change from first to last day
-                const change = data[0] !== 0 ? ((balance.balance - data[0]) / data[0]) * 100 : 0;
-                setBalanceChange(change);
-            };
-            generateTrendData();
+            }
+
+            setTrendData(dailyBalances);
+
+            // Percentage change: compare earliest reconstructed balance to current
+            const earliest = dailyBalances[0];
+            const change = earliest !== 0 ? ((balance.balance - earliest) / Math.abs(earliest)) * 100 : 0;
+            setBalanceChange(isFinite(change) ? change : 0);
+        } else if (balance) {
+            // No transactions — flat trend
+            setTrendData(new Array(7).fill(balance.balance));
+            setBalanceChange(0);
         }
-    }, [balance?.balance]);
+    }, [balance?.balance, transactions]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -195,7 +226,8 @@ export const DashboardPage = () => {
     const balanceRange = getMaxBalance() - getMinBalance();
 
     const normalizeBalance = (val: number) => {
-        return balanceRange > 0 ? ((val - getMinBalance()) / balanceRange) * 100 : 50;
+        if (balanceRange === 0) return 50;
+        return Math.max(0, Math.min(100, ((val - getMinBalance()) / balanceRange) * 100));
     };
 
     // Financial Insights Calculations
@@ -221,7 +253,7 @@ export const DashboardPage = () => {
             // Today's spending
             if (
                 txDate.toDateString() === today.toDateString() &&
-                tx.type === 'WITHDRAW'
+                tx.type === 'WITHDRAWAL'
             ) {
                 todaySpending += amount;
             }
@@ -330,8 +362,8 @@ export const DashboardPage = () => {
                                             {new Intl.NumberFormat('en-US', { style: 'currency', currency: balance?.currency || 'LKR' }).format(balance?.balance || 0)}
                                         </h2>
                                     </div>
-                                    <div className={`text-sm font-semibold px-3 py-1 rounded-full ${balanceChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                        {balanceChange >= 0 ? '↑' : '↓'} {Math.abs(balanceChange).toFixed(1)}%
+                                    <div className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${balanceChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                        {balanceChange >= 0 ? '↑' : '↓'} {isFinite(balanceChange) ? Math.abs(balanceChange).toFixed(1) : '0.0'}%
                                     </div>
                                 </div>
 

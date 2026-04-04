@@ -30,7 +30,7 @@ export interface SavedAccount {
 
 export interface Transaction {
     id: string;
-    type: 'DEPOSIT' | 'WITHDRAW';
+    type: 'DEPOSIT' | 'WITHDRAWAL';
     amount: number;
     date: string;
     createdAt: string;

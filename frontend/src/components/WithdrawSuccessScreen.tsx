@@ -66,7 +66,7 @@ export const WithdrawSuccessScreen = ({ transaction, previousBalance, newBalance
         setIsCancelling(false);
     };
 
-    const now = new Date(transaction.date);
+    const now = new Date(transaction.date || transaction.createdAt || Date.now());
     const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 

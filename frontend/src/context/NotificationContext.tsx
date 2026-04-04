@@ -34,13 +34,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             };
 
             setNotifications((prev) => [notification, ...prev]);
-
-            // Auto-remove after 5 seconds (if not a warning or low balance)
-            if (type !== 'WARNING' && type !== 'LOW_BALANCE') {
-                setTimeout(() => {
-                    removeNotification(id);
-                }, 5000);
-            }
         },
         []
     );

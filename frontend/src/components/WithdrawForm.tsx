@@ -41,12 +41,15 @@ const MAX_AMOUNT = 5000; // daily limit
 function buildDestination(method: PaymentMethod, details: Record<string, string>): string {
     switch (method) {
         case 'bank_transfer': return details.accountNumber ? `••••${details.accountNumber.slice(-4)} · ${details.bankName || 'Bank'}` : 'Bank Account';
-        case 'card': return details.lastFour ? `Visa ••••${details.lastFour}` : details.savedLabel || 'Debit Card';
+        case 'card': return details.cardNumber ? `Visa •••• ${details.cardNumber.replace(/\s/g, '').slice(-4)}` : details.savedLabel || 'Debit Card';
         case 'mobile_wallet': return details.walletType || 'Mobile Wallet';
         case 'crypto': return details.walletAddress ? `${details.walletAddress.slice(0, 6)}...${details.walletAddress.slice(-4)}` : 'Wallet';
         default: return method;
     }
 }
+
+const formatCardNumber = (v: string) =>
+    v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
 
 // Saved accounts feature — placeholder for future backend integration
 const savedAccounts: { id: string; method: PaymentMethod; label: string; details: Record<string, string> }[] = [];
@@ -102,8 +105,8 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
             if (!paymentDetails.bankName)
                 errs.bankName = 'Enter your bank name';
         } else if (selectedMethod === 'card') {
-            if (!paymentDetails.lastFour || paymentDetails.lastFour.length !== 4)
-                errs.lastFour = 'Enter the last 4 digits of your card';
+            if (!paymentDetails.cardNumber || paymentDetails.cardNumber.replace(/\s/g, '').length < 16)
+                errs.cardNumber = 'Enter a valid 16-digit card number';
         } else if (selectedMethod === 'mobile_wallet') {
             if (!paymentDetails.walletType)
                 errs.walletType = 'Please select a wallet type';
@@ -163,7 +166,17 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
             const result = await transactionService.withdraw(numAmount, `Withdrawal to ${destLabel}`);
 
             onSuccess();
-            setSuccessData({ transaction: result.transaction, prevBalance: prevBal, newBalance: result.newBalance });
+            // Enrich API transaction with frontend-only fields the success screen needs
+            const enrichedTransaction: Transaction = {
+                ...result.transaction,
+                date: result.transaction.date || result.transaction.createdAt || new Date().toISOString(),
+                method: selectedMethod!,
+                fee: fee,
+                destination: destLabel,
+                withdrawalStatus: methodConfig?.instant ? 'completed' : 'pending',
+                estimatedArrival: methodConfig?.instant ? 'Instant' : '1–3 business days',
+            };
+            setSuccessData({ transaction: enrichedTransaction, prevBalance: prevBal, newBalance: result.newBalance });
             setStep('success');
         } catch (err) {
             console.error('Withdrawal failed', err);
@@ -348,13 +361,13 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
 
                             {selectedMethod === 'card' && (
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Last 4 digits of your card</label>
-                                    <input type="text" placeholder="e.g. 4242" maxLength={4}
-                                        value={paymentDetails.lastFour || ''}
-                                        onChange={e => setPaymentDetails(p => ({ ...p, lastFour: e.target.value.replace(/\D/g, '') }))}
-                                        className={`w-full bg-white/5 border rounded-xl py-3.5 px-4 text-white placeholder-gray-600 outline-none focus:bg-white/8 transition-all font-mono tracking-widest text-center text-lg ${detailErrors.lastFour ? 'border-red-500/60' : 'border-white/10 focus:border-orange-500/50'}`}
+                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Card Number</label>
+                                    <input type="text" placeholder="0000 0000 0000 0000"
+                                        value={paymentDetails.cardNumber || ''}
+                                        onChange={e => setPaymentDetails(p => ({ ...p, cardNumber: formatCardNumber(e.target.value) }))}
+                                        className={`w-full bg-white/5 border rounded-xl py-3.5 px-4 text-white placeholder-gray-600 outline-none focus:bg-white/8 transition-all font-mono tracking-wider text-sm ${detailErrors.cardNumber ? 'border-red-500/60' : 'border-white/10 focus:border-orange-500/50'}`}
                                     />
-                                    {detailErrors.lastFour && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{detailErrors.lastFour}</p>}
+                                    {detailErrors.cardNumber && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{detailErrors.cardNumber}</p>}
                                 </div>
                             )}
 
@@ -417,7 +430,7 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
                             {/* Available balance hint */}
                             <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/3 border border-white/8">
                                 <span className="text-xs text-gray-400">Available Balance</span>
-                                <span className="text-sm font-bold text-white">${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-sm font-bold text-white">Rs {currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                             </div>
 
                             {/* Quick % buttons */}
@@ -453,7 +466,7 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
                                             setAmount(e.target.value);
                                             setAmountError('');
                                         }}
-                                        className={`w-full bg-white/5 border rounded-xl py-4 pl-8 pr-4 text-white text-xl font-medium placeholder-gray-600 outline-none focus:bg-white/8 transition-all
+                                        className={`w-full bg-white/5 border rounded-xl py-4 pl-12 pr-4 text-white text-xl font-medium placeholder-gray-600 outline-none focus:bg-white/8 transition-all
                                             ${amountError ? 'border-red-500/60' : 'border-white/10 focus:border-orange-500/50'}`}
                                     />
                                 </div>
@@ -461,7 +474,7 @@ export const WithdrawForm = ({ onSuccess, currentBalance }: WithdrawFormProps) =
                                     {amountError ? (
                                         <p className="text-red-400 text-xs flex items-center gap-1"><AlertCircle className="w-3 h-3" />{amountError}</p>
                                     ) : (
-                                        <p className="text-xs text-gray-500">Min: ${MIN_AMOUNT} | Daily Limit: ${MAX_AMOUNT.toLocaleString()}</p>
+                                        <p className="text-xs text-gray-500">Min: Rs {MIN_AMOUNT} | Daily Limit: Rs {MAX_AMOUNT.toLocaleString()}</p>
                                     )}
                                 </div>
                             </div>

@@ -21,22 +21,10 @@ export const BalanceCard = ({
     const [trendData, setTrendData] = useState<number[]>([]);
     const [balanceChange, setBalanceChange] = useState<number>(0);
 
-    // Generate mock trend data for last 7 days
+    // Show flat trend (no real transaction data available in this context)
     useEffect(() => {
-        const generateTrendData = () => {
-            const data = [];
-            for (let i = 0; i < 7; i++) {
-                const variation = Math.random() * 5000 - 2500; // ±$2500
-                data.push(Math.max(balance - 10000 + variation, balance * 0.7));
-            }
-            data[6] = balance; // Last day is current balance
-            setTrendData(data);
-            
-            // Calculate change from first to last day
-            const change = ((balance - data[0]) / data[0]) * 100;
-            setBalanceChange(change);
-        };
-        generateTrendData();
+        setTrendData(new Array(7).fill(balance));
+        setBalanceChange(0);
     }, [balance]);
 
     const maskAccountNumber = (num: string) => {
@@ -50,6 +38,7 @@ export const BalanceCard = ({
 
     // Normalize balance data for chart (0-100 scale)
     const normalizeBalance = (val: number) => {
+        if (balanceRange === 0) return 50;
         return ((val - getMinBalance()) / balanceRange) * 100;
     };
 
@@ -68,8 +57,8 @@ export const BalanceCard = ({
                             {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(balance)}
                         </h1>
                     </div>
-                    <div className={`text-sm font-semibold px-3 py-1 rounded-full ${balanceChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                        {balanceChange >= 0 ? '↑' : '↓'} {Math.abs(balanceChange).toFixed(1)}%
+                    <div className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${balanceChange >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {balanceChange >= 0 ? '↑' : '↓'} {isFinite(balanceChange) ? Math.abs(balanceChange).toFixed(1) : '0.0'}%
                     </div>
                 </div>
 

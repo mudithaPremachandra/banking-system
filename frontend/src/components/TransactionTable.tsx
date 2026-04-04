@@ -6,7 +6,7 @@ interface TransactionTableProps {
     transactions: Transaction[];
 }
 
-type FilterType = 'ALL' | 'DEPOSIT' | 'WITHDRAW';
+type FilterType = 'ALL' | 'DEPOSIT' | 'WITHDRAWAL';
 
 export const TransactionTable = ({ transactions }: TransactionTableProps) => {
     const [filterType, setFilterType] = useState<FilterType>('ALL');
@@ -164,7 +164,7 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
                 <div className="space-y-4">
                     {/* Type Filter Buttons */}
                     <div className="flex gap-2 flex-wrap">
-                        {(['ALL', 'DEPOSIT', 'WITHDRAW'] as const).map((type) => (
+                        {(['ALL', 'DEPOSIT', 'WITHDRAWAL'] as const).map((type) => (
                             <button
                                 key={type}
                                 onClick={() => handleFilterChange(type)}
@@ -174,7 +174,7 @@ export const TransactionTable = ({ transactions }: TransactionTableProps) => {
                                         : 'bg-white/10 text-gray-400 hover:bg-white/20'
                                 }`}
                             >
-                                {type === 'ALL' ? 'All' : type === 'DEPOSIT' ? 'Income' : 'Expense'}
+                                {type === 'ALL' ? 'All' : type === 'DEPOSIT' ? 'Income' : 'Expenses'}
                             </button>
                         ))}
                     </div>
