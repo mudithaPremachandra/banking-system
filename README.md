@@ -6,7 +6,7 @@
 
 ```bash
 # 1. Clone the repo
-git clone <repo-url> && cd banking-system
+git clone https://github.com/mudithaPremachandra/banking-system.git && cd banking-system
 
 # 2. Copy environment variables
 cp .env.example .env
@@ -15,12 +15,16 @@ cp .env.example .env
 # 3. Start everything
 docker-compose up --build
 
-# 4. Access the app
-# Frontend:  http://localhost:5173
-# Gateway:   http://localhost:3000
-# Auth API:  http://localhost:3001
-# Account:   http://localhost:3002
-# Notif:     http://localhost:3003
+# 4. Run the frontend
+Navigate to frontend/
+npm run dev
+
+# 5. Access the app
+Frontend:  http://localhost:5173
+Gateway:   http://localhost:3000
+Auth API:  http://localhost:3001
+Account:   http://localhost:3002
+Notif:     http://localhost:3003
 ```
 
 ## Architecture
@@ -40,7 +44,7 @@ Frontend (5173) → API Gateway (3000) → Auth Service (3001)
 | # | Member | Role | Service/Area |
 |---|--------|------|-------------|
 | 1 | Muditha | Project Lead / Frontend / DevOps | `frontend/`, `docker-compose.yml` |
-| 2 | Kasun | UI/UX Designer | Figma, `frontend/src/pages/` |
+| 2 | Kasun | UI/UX Designer / Frontend | Figma, `frontend/`, `frontend/src/pages/` |
 | 3 | Sanjaya | API Gateway Developer | `gateway/` |
 | 4 | Sandun | Auth Service Developer | `services/auth-service/` |
 | 5 | Disaan | Account & Transaction Developer | `services/account-service/` |
